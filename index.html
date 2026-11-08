@@ -89,12 +89,22 @@
           <option value="">— Kies een afspeellijst —</option>
         </select>
         <form id="zoek-formulier" class="zoeken">
-          <input id="zoekterm" type="search" placeholder="Nummer zoeken…" aria-label="Zoekterm">
+          <select id="zoek-soort" aria-label="Waar zoek je naar?">
+            <option value="nummers">Nummers</option>
+            <option value="albums">Albums</option>
+            <option value="podcasts">Podcasts</option>
+            <option value="luisterboeken">Luisterboeken</option>
+          </select>
+          <input id="zoekterm" type="search" placeholder="Zoeken…" aria-label="Zoekterm">
           <button type="submit">Zoek</button>
         </form>
       </div>
+      <div class="lijst-kop">
+        <button id="knop-terug" hidden>↩ Terug</button>
+        <span id="lijst-titel"></span>
+      </div>
       <ol id="nummers" class="nummers"></ol>
-      <div class="lijst-voet">Dubbelklik (of Enter) op een nummer om het af te spelen</div>
+      <div class="lijst-voet">Dubbelklik (of Enter): een nummer speelt af, een album, podcast of boek gaat open</div>
     </section>
 
   </main>

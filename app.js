@@ -24,8 +24,10 @@ const HERHAAL_LABEL = ["REP: UIT", "REP: LIJST", "REP: 1"];
 let marqueeTekst = "Welkom bij de Retrospeler";
 let marqueeStart = 0;
 
-let lijstNummers = [];        // de nummers die nu in de afspeellijst staan
-let lijstContext = null;      // Spotify-adres van de afspeellijst (of null bij zoeken/likes)
+let lijstNummers = [];        // wat er nu in de lijst staat (nummers, albums, podcasts, ...)
+let lijstContext = null;      // Spotify-adres van de afspeellijst of het album (anders null)
+let lijstTitel = "";          // de titel boven de lijst
+const geschiedenis = [];      // eerdere lijsten, voor de knop "Terug"
 let huidigeUri = null;        // het nummer dat nu speelt
 const afspeellijsten = {};    // id -> afspeellijst
 
@@ -152,8 +154,12 @@ function verwerkStatus(status) {
 
   const nummer = status.track_window.current_track;
   if (nummer) {
-    const artiesten = nummer.artists.map((artiest) => artiest.name).join(", ");
-    zetMarquee(artiesten + " - " + nummer.name + " (" + formatTijd(duurMs) + ")");
+    // Bij een podcast of boek is er soms geen artiest; dan tonen we de naam van de podcast.
+    let maker = (nummer.artists || []).map((artiest) => artiest.name).join(", ");
+    if (!maker && nummer.album) {
+      maker = nummer.album.name;
+    }
+    zetMarquee((maker ? maker + " - " : "") + nummer.name + " (" + formatTijd(duurMs) + ")");
     // Soms speelt Spotify een andere versie van hetzelfde nummer ("linked_from").
     huidigeUri = nummer.linked_from && nummer.linked_from.uri ? nummer.linked_from.uri : nummer.uri;
     markeerHuidigNummer();
@@ -162,14 +168,22 @@ function verwerkStatus(status) {
 
 // ---------- afspeellijst ----------
 
-/** Vult de keuzelijst met de afspeellijsten van de gebruiker. */
-async function laadAfspeellijsten() {
-  const keuze = element("kies-lijst");
-  const likes = document.createElement("option");
-  likes.value = "likes";
-  likes.textContent = "♥ Gelikete nummers";
-  keuze.appendChild(likes);
+/** Voegt één keuze toe aan de keuzelijst bovenaan de afspeellijst. */
+function voegKeuzeToe(waarde, tekst) {
+  const optie = document.createElement("option");
+  optie.value = waarde;
+  optie.textContent = tekst;
+  element("kies-lijst").appendChild(optie);
+}
 
+/** Vult de keuzelijst met je bibliotheek en je afspeellijsten. */
+async function laadAfspeellijsten() {
+  voegKeuzeToe("likes", "♥ Gelikete nummers");
+  voegKeuzeToe("albums", "💿 Mijn albums");
+  voegKeuzeToe("podcasts", "🎙 Mijn podcasts");
+  voegKeuzeToe("luisterboeken", "📖 Mijn luisterboeken");
+
+  const keuze = element("kies-lijst");
   const lijsten = await spotify.haalAfspeellijsten();
   for (const lijst of lijsten) {
     afspeellijsten[lijst.id] = lijst;
@@ -180,64 +194,135 @@ async function laadAfspeellijsten() {
   }
 }
 
-/** Laadt de nummers van de gekozen afspeellijst. */
+/** Zet een nieuwe lijst neer. Met bewaarVorige = true kun je daarna "Terug". */
+function zetLijst(regels, context, titel, bewaarVorige) {
+  if (bewaarVorige) {
+    geschiedenis.push({ regels: lijstNummers, context: lijstContext, titel: lijstTitel });
+  } else {
+    geschiedenis.length = 0; // nieuwe start: geschiedenis leegmaken
+  }
+  lijstNummers = regels;
+  lijstContext = context;
+  lijstTitel = titel;
+  toonNummers();
+}
+
+/** Gaat terug naar de vorige lijst (bijv. van een album terug naar "Mijn albums"). */
+function gaTerug() {
+  const vorige = geschiedenis.pop();
+  if (!vorige) {
+    return;
+  }
+  lijstNummers = vorige.regels;
+  lijstContext = vorige.context;
+  lijstTitel = vorige.titel;
+  toonNummers();
+}
+
+/** Laadt wat er in de keuzelijst gekozen is. */
 async function kiesLijst() {
-  const waarde = element("kies-lijst").value;
+  const keuze = element("kies-lijst");
+  const waarde = keuze.value;
   if (!waarde) {
     return;
   }
-  toonMelding("Nummers laden…");
+  const titel = keuze.options[keuze.selectedIndex].textContent;
+  toonMelding("Laden…");
+
+  let regels;
+  let context = null;
   if (waarde === "likes") {
-    lijstNummers = await spotify.haalGelikteNummers();
-    lijstContext = null;
+    regels = await spotify.haalGelikteNummers();
+  } else if (waarde === "albums") {
+    regels = await spotify.haalOpgeslagenAlbums();
+  } else if (waarde === "podcasts") {
+    regels = await spotify.haalMijnPodcasts();
+  } else if (waarde === "luisterboeken") {
+    regels = await spotify.haalMijnLuisterboeken();
   } else {
     try {
-      lijstNummers = await spotify.haalNummersVanLijst(waarde);
+      regels = await spotify.haalNummersVanLijst(waarde);
     } catch (fout) {
       throw new Error("Deze afspeellijst kon niet geladen worden. Spotify geeft apps in "
         + "ontwikkelmodus soms alleen toegang tot je eigen lijsten. (" + fout.message + ")");
     }
-    lijstContext = afspeellijsten[waarde].uri;
+    context = afspeellijsten[waarde].uri;
   }
-  toonNummers();
-  toonMelding(lijstNummers.length + " nummers geladen.");
+  zetLijst(regels, context, titel, false);
+  toonMelding(regels.length + " gevonden.");
 }
 
-/** Zoekt nummers en zet ze in de afspeellijst. */
+/** Zoekt naar nummers, albums, podcasts of luisterboeken. */
 async function zoek(gebeurtenis) {
   gebeurtenis.preventDefault(); // anders herlaadt het formulier de pagina
   const zoekterm = element("zoekterm").value.trim();
   if (!zoekterm) {
     return;
   }
+  const soort = element("zoek-soort").value;
   toonMelding("Zoeken…");
-  lijstNummers = await spotify.zoekNummers(zoekterm);
-  lijstContext = null;
+  const regels = await spotify.zoek(zoekterm, soort);
   element("kies-lijst").value = "";
-  toonNummers();
-  toonMelding(lijstNummers.length + " resultaten voor '" + zoekterm + "'.");
+  zetLijst(regels, null, "Zoeken: '" + zoekterm + "' (" + soort + ")", false);
+  toonMelding(regels.length + " resultaten.");
 }
 
-/** Zet de nummers als regels in de lijst op het scherm. */
+/** Is deze regel een map (album, podcast of boek) in plaats van iets om af te spelen? */
+function isMap(regel) {
+  return regel.soort === "album" || regel.soort === "podcast" || regel.soort === "luisterboek";
+}
+
+/** Opent een album, podcast of luisterboek en toont de inhoud. */
+async function openMap(map) {
+  toonMelding("Openen…");
+  let regels;
+  let context = null;
+  if (map.soort === "album") {
+    regels = await spotify.haalAlbumNummers(map.id);
+    context = map.uri; // een album kan Spotify als geheel afspelen
+  } else if (map.soort === "podcast") {
+    regels = await spotify.haalAfleveringen(map.id);
+  } else {
+    regels = await spotify.haalHoofdstukken(map.id);
+  }
+  zetLijst(regels, context, map.naam + (map.maker ? " – " + map.maker : ""), true);
+  toonMelding(regels.length + " gevonden.");
+}
+
+/** Maakt de tekst voor één regel in de lijst. */
+function tekstVoorRegel(regel, index) {
+  const symbolen = { album: "💿 ", podcast: "🎙 ", luisterboek: "📖 " };
+  if (isMap(regel)) {
+    return symbolen[regel.soort] + (regel.maker ? regel.maker + " - " : "") + regel.naam;
+  }
+  return (index + 1) + ". " + (regel.maker ? regel.maker + " - " : "") + regel.naam;
+}
+
+/** Zet de regels in de lijst op het scherm. */
 function toonNummers() {
+  element("lijst-titel").textContent = lijstTitel;
+  element("knop-terug").hidden = geschiedenis.length === 0;
+
   const lijst = element("nummers");
   lijst.innerHTML = "";
-  lijstNummers.forEach((nummer, index) => {
+  lijstNummers.forEach((item, index) => {
     const regel = document.createElement("li");
     regel.tabIndex = 0;
     regel.dataset.index = index;
-    regel.dataset.uri = nummer.uri;
+    regel.dataset.uri = item.uri;
+    regel.classList.toggle("map", isMap(item));
 
     const titel = document.createElement("span");
     titel.className = "titel";
-    titel.textContent = (index + 1) + ". " + nummer.artiesten + " - " + nummer.naam;
+    titel.textContent = tekstVoorRegel(item, index);
     const duur = document.createElement("span");
     duur.className = "duur";
-    duur.textContent = formatTijd(nummer.duurMs);
+    duur.textContent = isMap(item) ? item.extra + " ▸" : formatTijd(item.duurMs);
 
     regel.append(titel, duur);
     lijst.appendChild(regel);
   });
+  lijst.scrollTop = 0;
   markeerHuidigNummer();
 }
 
@@ -248,7 +333,17 @@ function markeerHuidigNummer() {
   }
 }
 
-/** Speelt het nummer op plek `index` in de lijst af. */
+/** Dubbelklik op een regel: een map openen, of iets afspelen. */
+async function kiesRegel(index) {
+  const regel = lijstNummers[index];
+  if (isMap(regel)) {
+    await openMap(regel);
+  } else {
+    await speelNummer(index);
+  }
+}
+
+/** Speelt het nummer (of de aflevering, of het hoofdstuk) op plek `index` af. */
 async function speelNummer(index) {
   if (!spelerIsKlaar()) {
     return;
@@ -257,12 +352,26 @@ async function speelNummer(index) {
   const nummer = lijstNummers[index];
   let opdracht;
   if (lijstContext) {
-    // Binnen de afspeellijst, zodat "volgende" het volgende nummer van die lijst is.
+    // Binnen de afspeellijst of het album, zodat "volgende" daarin doorgaat.
     opdracht = { context_uri: lijstContext, offset: { uri: nummer.uri } };
   } else {
-    opdracht = { uris: lijstNummers.map((n) => n.uri), offset: { position: index } };
+    // Anders geven we de hele lijst mee, zodat "volgende" ook werkt.
+    const afspeelbaar = lijstNummers.filter((regel) => !isMap(regel));
+    opdracht = {
+      uris: afspeelbaar.map((regel) => regel.uri),
+      offset: { position: afspeelbaar.indexOf(nummer) },
+    };
   }
-  await spotify.speelAf(apparaatId, opdracht);
+
+  try {
+    await spotify.speelAf(apparaatId, opdracht);
+  } catch (fout) {
+    if (nummer.soort === "hoofdstuk") {
+      throw new Error("Spotify laat dit luisterboek niet afspelen in deze speler. "
+        + "Luisterboeken werken mogelijk alleen in de officiële Spotify-app. (" + fout.message + ")");
+    }
+    throw fout;
+  }
 }
 
 // ---------- knoppen koppelen ----------
@@ -284,8 +393,9 @@ function koppelKnoppen() {
     }
     speler.activateElement();
     const erIsEenNummer = laatsteStatus && laatsteStatus.track_window.current_track;
-    if (!erIsEenNummer && lijstNummers.length > 0) {
-      await speelNummer(0);
+    const eersteAfspeelbare = lijstNummers.findIndex((regel) => !isMap(regel));
+    if (!erIsEenNummer && eersteAfspeelbare >= 0) {
+      await speelNummer(eersteAfspeelbare);
     } else {
       await speler.resume();
     }
@@ -358,14 +468,15 @@ function koppelKnoppen() {
   nummers.addEventListener("dblclick", veilig(async (gebeurtenis) => {
     const regel = gebeurtenis.target.closest("li");
     if (regel) {
-      await speelNummer(Number(regel.dataset.index));
+      await kiesRegel(Number(regel.dataset.index));
     }
   }));
   nummers.addEventListener("keydown", veilig(async (gebeurtenis) => {
     if (gebeurtenis.key === "Enter" && gebeurtenis.target.dataset.index !== undefined) {
-      await speelNummer(Number(gebeurtenis.target.dataset.index));
+      await kiesRegel(Number(gebeurtenis.target.dataset.index));
     }
   }));
+  element("knop-terug").addEventListener("click", gaTerug);
 
   // Visualisatie
   element("knop-microfoon").addEventListener("click", veilig(async () => {

@@ -219,13 +219,103 @@ function naarNummers(items) {
       continue;
     }
     nummers.push({
+      soort: "nummer",
       uri: nummer.uri,
       naam: nummer.name,
-      artiesten: nummer.artists.map((artiest) => artiest.name).join(", "),
+      maker: namenVan(nummer.artists),
       duurMs: nummer.duration_ms,
     });
   }
   return nummers;
+}
+
+/** Maakt van een lijst artiesten of schrijvers één tekst: "A, B, C". */
+function namenVan(personen) {
+  if (!personen) {
+    return "";
+  }
+  return personen.map((persoon) => persoon.name).join(", ");
+}
+
+// Albums, podcasts en luisterboeken zijn "mappen": je opent ze om de inhoud te zien.
+// Elke functie hieronder maakt er hetzelfde soort simpele object van.
+
+/** Zet albums om. In je bibliotheek zit het album in .album, bij zoeken niet. */
+function naarAlbums(items) {
+  const albums = [];
+  for (const regel of items) {
+    const album = regel && (regel.album || regel);
+    if (!album || !album.uri) {
+      continue;
+    }
+    albums.push({
+      soort: "album",
+      uri: album.uri,
+      id: album.id,
+      naam: album.name,
+      maker: namenVan(album.artists),
+      extra: album.total_tracks + " nrs",
+    });
+  }
+  return albums;
+}
+
+/** Zet podcasts om. In je bibliotheek zit de podcast in .show, bij zoeken niet. */
+function naarPodcasts(items) {
+  const podcasts = [];
+  for (const regel of items) {
+    const podcast = regel && (regel.show || regel);
+    if (!podcast || !podcast.uri) {
+      continue;
+    }
+    podcasts.push({
+      soort: "podcast",
+      uri: podcast.uri,
+      id: podcast.id,
+      naam: podcast.name,
+      maker: podcast.publisher,
+      extra: "podcast",
+    });
+  }
+  return podcasts;
+}
+
+/** Zet luisterboeken om. */
+function naarLuisterboeken(items) {
+  const boeken = [];
+  for (const regel of items) {
+    const boek = regel && (regel.audiobook || regel);
+    if (!boek || !boek.uri) {
+      continue;
+    }
+    boeken.push({
+      soort: "luisterboek",
+      uri: boek.uri,
+      id: boek.id,
+      naam: boek.name,
+      maker: namenVan(boek.authors),
+      extra: "boek",
+    });
+  }
+  return boeken;
+}
+
+/** Zet afleveringen van een podcast of hoofdstukken van een boek om. */
+function naarDelen(items, soort) {
+  const delen = [];
+  for (const deel of items) {
+    if (!deel || !deel.uri) {
+      continue;
+    }
+    delen.push({
+      soort: soort,
+      uri: deel.uri,
+      naam: deel.name,
+      maker: "",
+      duurMs: deel.duration_ms,
+    });
+  }
+  return delen;
 }
 
 // ---------- gegevens ophalen ----------
@@ -255,9 +345,66 @@ export async function haalGelikteNummers() {
   return naarNummers(items);
 }
 
-/** Zoekt nummers op naam of artiest. */
-export async function zoekNummers(zoekterm) {
-  const data = await api("/search?type=track&limit=10&q=" + encodeURIComponent(zoekterm));
+/** De albums die de gebruiker heeft opgeslagen. */
+export async function haalOpgeslagenAlbums() {
+  const items = await haalAllePaginas("/me/albums?limit=50", 4);
+  return naarAlbums(items);
+}
+
+/** De podcasts die de gebruiker volgt. */
+export async function haalMijnPodcasts() {
+  const items = await haalAllePaginas("/me/shows?limit=50", 4);
+  return naarPodcasts(items);
+}
+
+/** De luisterboeken die de gebruiker heeft opgeslagen. */
+export async function haalMijnLuisterboeken() {
+  const items = await haalAllePaginas("/me/audiobooks?limit=50", 4);
+  return naarLuisterboeken(items);
+}
+
+/** De nummers van één album. */
+export async function haalAlbumNummers(albumId) {
+  const items = await haalAllePaginas("/albums/" + albumId + "/tracks?limit=50", 4);
+  return naarNummers(items);
+}
+
+/** De afleveringen van een podcast (de nieuwste 100). */
+export async function haalAfleveringen(podcastId) {
+  const items = await haalAllePaginas("/shows/" + podcastId + "/episodes?limit=50", 2);
+  return naarDelen(items, "aflevering");
+}
+
+/** De hoofdstukken van een luisterboek. */
+export async function haalHoofdstukken(boekId) {
+  const items = await haalAllePaginas("/audiobooks/" + boekId + "/chapters?limit=50", 4);
+  return naarDelen(items, "hoofdstuk");
+}
+
+// Welk Spotify-type hoort bij welke zoekkeuze.
+const ZOEK_TYPES = {
+  nummers: "track",
+  albums: "album",
+  podcasts: "show",
+  luisterboeken: "audiobook",
+};
+
+/** Zoekt op naam. Soort is "nummers", "albums", "podcasts" of "luisterboeken". */
+export async function zoek(zoekterm, soort) {
+  const type = ZOEK_TYPES[soort];
+  // market=from_token: zoek in het land van je eigen account (nodig voor podcasts en boeken).
+  const data = await api("/search?type=" + type + "&limit=10&market=from_token&q="
+    + encodeURIComponent(zoekterm));
+
+  if (soort === "albums") {
+    return naarAlbums(data.albums.items);
+  }
+  if (soort === "podcasts") {
+    return naarPodcasts(data.shows.items);
+  }
+  if (soort === "luisterboeken") {
+    return naarLuisterboeken(data.audiobooks.items);
+  }
   return naarNummers(data.tracks.items);
 }
 

@@ -347,6 +347,36 @@ li:focus-visible {
   gap: 4px;
 }
 
+.zoeken select {
+  flex: 0 0 auto;
+}
+
+.lijst-kop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 22px;
+  padding: 0 8px 4px;
+  font-size: 12px;
+  color: #aab0c4;
+}
+
+.lijst-kop button {
+  height: 22px;
+  padding: 0 8px;
+  font-size: 12px;
+}
+
+#lijst-titel {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.nummers li.map .duur {
+  color: var(--lcd-dim);
+}
+
 .zoeken input {
   flex: 1;
   min-width: 0;
