@@ -1,0 +1,430 @@
+/* style.css – het uiterlijk: een retro muziekspeler uit de jaren '90 */
+
+:root {
+  --bureau: #14161c;
+  --paneel-licht: #5c6278;
+  --paneel-donker: #0e0f13;
+  --lcd-tekst: #3cff6e;
+  --lcd-dim: #1c9a45;
+  --accent: #ffb000;
+  --tekst: #d8dbe6;
+  --streep-a: #7a5a14;
+  --streep-b: #c99a2a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(circle at 30% 20%, #232733, var(--bureau) 70%);
+  color: var(--tekst);
+  font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+button,
+select,
+input {
+  font: inherit;
+}
+
+/* ---------- indeling ---------- */
+
+.bureaublad {
+  display: grid;
+  grid-template-columns: minmax(340px, 470px) 1fr;
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    "speler visualisatie"
+    "lijst  visualisatie";
+  gap: 12px;
+  padding: 16px;
+  height: 100vh;
+}
+
+.speler { grid-area: speler; }
+.visualisatie { grid-area: visualisatie; }
+.afspeellijst { grid-area: lijst; min-height: 0; }
+
+@media (max-width: 860px) {
+  .bureaublad {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    grid-template-areas: "speler" "visualisatie" "lijst";
+    height: auto;
+  }
+  .vis-houder { height: 60vw; min-height: 240px; }
+  .nummers { max-height: 60vh; }
+}
+
+/* ---------- vensters ---------- */
+
+.venster {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: linear-gradient(#3a3e4e, #252834);
+  border: 1px solid #000;
+  border-radius: 3px;
+  box-shadow:
+    inset 1px 1px 0 var(--paneel-licht),
+    inset -1px -1px 0 var(--paneel-donker),
+    0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.titelbalk {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 18px;
+  margin: 3px 3px 0;
+  background: repeating-linear-gradient(0deg, var(--streep-a) 0 1px, var(--streep-b) 1px 3px);
+}
+
+.titelbalk .titel {
+  padding: 0 8px;
+  background: #2d3040;
+  font-family: "Silkscreen", monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: #f0e6c8;
+}
+
+.titelbalk .mini {
+  position: absolute;
+  right: 2px;
+  width: 16px;
+  height: 14px;
+  padding: 0;
+  font-size: 9px;
+  line-height: 1;
+}
+
+/* ---------- display ---------- */
+
+.display {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  margin: 8px;
+  padding: 8px 10px;
+  background: #000;
+  border: 2px solid;
+  border-color: var(--paneel-donker) var(--paneel-licht) var(--paneel-licht) var(--paneel-donker);
+  font-family: "VT323", monospace;
+  color: var(--lcd-tekst);
+}
+
+.lampjes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+}
+
+.lamp {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #2a1414;
+  transition: background 0.05s;
+}
+
+.lamp.aan {
+  background: #ff3b3b;
+  box-shadow: 0 0 8px #ff3b3b;
+}
+
+.tijd {
+  font-size: 46px;
+  line-height: 1;
+  letter-spacing: 2px;
+  text-shadow: 0 0 6px rgba(60, 255, 110, 0.6);
+}
+
+#mini-spectrum {
+  display: block;
+  width: 152px;
+  height: 36px;
+  margin-top: 4px;
+  image-rendering: pixelated;
+}
+
+.display-rechts {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.marquee {
+  overflow: hidden;
+  white-space: pre;
+  font-size: 24px;
+  border-bottom: 1px solid #0b3a1a;
+}
+
+.info-regel {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 18px;
+  color: var(--lcd-dim);
+}
+
+/* ---------- schuifjes ---------- */
+
+.schuif {
+  appearance: none;
+  -webkit-appearance: none;
+  height: 10px;
+  background: #0b0c10;
+  border: 1px solid;
+  border-color: var(--paneel-donker) var(--paneel-licht) var(--paneel-licht) var(--paneel-donker);
+  cursor: pointer;
+}
+
+.schuif::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 26px;
+  height: 12px;
+  background: linear-gradient(#d9c08a, #8a6a1a);
+  border: 1px solid #000;
+}
+
+.schuif::-moz-range-thumb {
+  width: 26px;
+  height: 12px;
+  background: linear-gradient(#d9c08a, #8a6a1a);
+  border: 1px solid #000;
+  border-radius: 0;
+}
+
+.positie {
+  margin: 0 8px;
+}
+
+/* ---------- knoppen ---------- */
+
+button,
+select {
+  color: var(--tekst);
+  background: linear-gradient(#5a6075, #353949);
+  border: 1px solid #000;
+  border-radius: 2px;
+  box-shadow: inset 1px 1px 0 #7a809a;
+  cursor: pointer;
+}
+
+button:active {
+  background: linear-gradient(#2c2f3b, #444a5c);
+  box-shadow: inset 1px 1px 2px #000;
+}
+
+button:focus-visible,
+select:focus-visible,
+input:focus-visible,
+li:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.bediening {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+}
+
+.knoppen {
+  display: flex;
+  gap: 2px;
+}
+
+.knoppen button {
+  width: 38px;
+  height: 28px;
+  font-size: 13px;
+}
+
+.volume {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: "Silkscreen", monospace;
+  font-size: 9px;
+}
+
+.volume .schuif {
+  width: 80px;
+}
+
+.schakel {
+  height: 22px;
+  padding: 0 6px;
+  font-family: "Silkscreen", monospace;
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.schakel.aan,
+.werkbalk button.aan {
+  color: var(--accent);
+  text-shadow: 0 0 6px var(--accent);
+}
+
+.inlog-blok {
+  padding: 0 8px 8px;
+}
+
+.groot {
+  width: 100%;
+  padding: 10px;
+  font-family: "Silkscreen", monospace;
+  font-size: 12px;
+  color: #10220f;
+  background: linear-gradient(#5dff8a, #1db954);
+  box-shadow: inset 1px 1px 0 #b8ffd0;
+}
+
+.hint {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: #8a90a4;
+}
+
+.hint code {
+  color: var(--lcd-tekst);
+  user-select: all;
+  word-break: break-all;
+}
+
+.melding {
+  min-height: 1.4em;
+  padding: 0 10px 8px;
+  font-size: 12px;
+  color: #aab0c4;
+}
+
+.melding.fout {
+  color: #ff8a7a;
+}
+
+/* ---------- werkbalken ---------- */
+
+.werkbalk {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 8px 6px;
+}
+
+.werkbalk button,
+.werkbalk select {
+  height: 26px;
+  padding: 0 8px;
+  font-size: 13px;
+}
+
+.werkbalk select {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+.opvulling {
+  flex: 1;
+}
+
+.zoeken {
+  display: flex;
+  flex: 1 1 180px;
+  gap: 4px;
+}
+
+.zoeken input {
+  flex: 1;
+  min-width: 0;
+  height: 26px;
+  padding: 0 6px;
+  color: var(--lcd-tekst);
+  background: #000;
+  border: 1px solid var(--paneel-licht);
+}
+
+/* ---------- visualisatie ---------- */
+
+.vis-houder {
+  position: relative;
+  flex: 1;
+  min-height: 260px;
+  margin: 0 8px 8px;
+  background: #000;
+  border: 2px solid;
+  border-color: var(--paneel-donker) var(--paneel-licht) var(--paneel-licht) var(--paneel-donker);
+}
+
+.vis-houder:fullscreen {
+  margin: 0;
+  border: 0;
+}
+
+#vis-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+/* ---------- afspeellijst ---------- */
+
+.nummers {
+  flex: 1;
+  min-height: 120px;
+  margin: 0 8px;
+  padding: 4px 0;
+  overflow-y: auto;
+  list-style: none;
+  background: #000;
+  border: 2px solid;
+  border-color: var(--paneel-donker) var(--paneel-licht) var(--paneel-licht) var(--paneel-donker);
+  font-family: "VT323", monospace;
+  font-size: 20px;
+  color: var(--lcd-tekst);
+}
+
+.nummers li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 8px;
+  white-space: nowrap;
+  cursor: default;
+  user-select: none;
+}
+
+.nummers li:hover {
+  background: #0b2a14;
+}
+
+.nummers li.speelt {
+  color: #ffffff;
+  background: #1d3a8a;
+}
+
+.nummers .titel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lijst-voet {
+  padding: 6px 10px 8px;
+  font-size: 11px;
+  color: #8a90a4;
+}

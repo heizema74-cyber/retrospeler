@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Retrospeler</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Silkscreen&family=VT323&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="bureaublad">
+
+    <!-- ========== Hoofdvenster: display en bediening ========== -->
+    <section class="venster speler" aria-label="Speler">
+      <header class="titelbalk">
+        <span class="titel">RETROSPELER</span>
+        <button id="knop-uitloggen" class="mini" title="Uitloggen" hidden>✕</button>
+      </header>
+
+      <div class="display">
+        <div class="display-links">
+          <div class="lampjes">
+            <span id="lamp-beat" class="lamp" title="Knippert op de beat"></span>
+            <span id="status-spelen">■</span>
+          </div>
+          <div id="tijd" class="tijd">00:00</div>
+          <canvas id="mini-spectrum" width="76" height="18"></canvas>
+        </div>
+        <div class="display-rechts">
+          <div id="marquee" class="marquee">Welkom bij de Retrospeler</div>
+          <div class="info-regel">
+            <span id="info-bpm">--- BPM</span>
+            <span id="info-bron">BRON: ---</span>
+          </div>
+          <div class="info-regel">
+            <span id="info-duur">--:--</span>
+            <span id="info-apparaat">NIET VERBONDEN</span>
+          </div>
+        </div>
+      </div>
+
+      <input id="positie" class="schuif positie" type="range" min="0" max="1000" value="0" aria-label="Positie in het nummer">
+
+      <div class="bediening">
+        <div class="knoppen">
+          <button id="knop-vorige" title="Vorige">⏮</button>
+          <button id="knop-afspelen" title="Afspelen">▶</button>
+          <button id="knop-pauze" title="Pauze">❚❚</button>
+          <button id="knop-stop" title="Stop">■</button>
+          <button id="knop-volgende" title="Volgende">⏭</button>
+        </div>
+        <label class="volume">VOL
+          <input id="volume" class="schuif" type="range" min="0" max="100" value="50" aria-label="Volume">
+        </label>
+        <button id="knop-shuffle" class="schakel" title="Willekeurige volgorde">SHUF</button>
+        <button id="knop-herhaal" class="schakel" title="Herhalen">REP: UIT</button>
+      </div>
+
+      <div id="inlog-blok" class="inlog-blok" hidden>
+        <button id="knop-inloggen" class="groot">Inloggen bij Spotify</button>
+        <p class="hint">Terugstuur-adres (moet zo in je Spotify Dashboard staan):<br>
+          <code id="terugstuur-adres"></code></p>
+      </div>
+      <div id="melding" class="melding" role="status"></div>
+    </section>
+
+    <!-- ========== Visualisatievenster ========== -->
+    <section class="venster visualisatie" aria-label="Visualisatie">
+      <header class="titelbalk"><span class="titel">VISUALISATIE</span></header>
+      <div class="werkbalk">
+        <button id="knop-microfoon" title="Luister via de microfoon naar de muziek uit je speakers">🎤 Microfoon</button>
+        <button id="knop-tabblad" title="Deel het geluid van dit tabblad (Chrome/Edge)">🖥 Tabblad-audio</button>
+        <span class="opvulling"></span>
+        <button id="knop-modus" title="Andere visualisatie">Modus: Spectrum</button>
+        <button id="knop-volledig" title="Volledig scherm">⛶</button>
+      </div>
+      <div id="vis-houder" class="vis-houder">
+        <canvas id="vis-canvas" title="Klik: andere modus · Dubbelklik: volledig scherm"></canvas>
+      </div>
+    </section>
+
+    <!-- ========== Afspeellijstvenster ========== -->
+    <section class="venster afspeellijst" aria-label="Afspeellijst">
+      <header class="titelbalk"><span class="titel">AFSPEELLIJST</span></header>
+      <div class="werkbalk">
+        <select id="kies-lijst" aria-label="Kies een afspeellijst">
+          <option value="">— Kies een afspeellijst —</option>
+        </select>
+        <form id="zoek-formulier" class="zoeken">
+          <input id="zoekterm" type="search" placeholder="Nummer zoeken…" aria-label="Zoekterm">
+          <button type="submit">Zoek</button>
+        </form>
+      </div>
+      <ol id="nummers" class="nummers"></ol>
+      <div class="lijst-voet">Dubbelklik (of Enter) op een nummer om het af te spelen</div>
+    </section>
+
+  </main>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
