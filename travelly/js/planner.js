@@ -13,6 +13,9 @@ const toTime = (m) => { m = Math.round(m / 5) * 5; return `${String(Math.floor(m
 
 const TEMPO = { rustig: { n: 3, start: '10:00' }, normaal: { n: 4, start: '09:30' }, actief: { n: 6, start: '09:00' } };
 
+// uitjes waar je speciaal voor naartoe gaat
+const BIG = (s) => s.cat === 'dieren' && s.short !== 'Kinderboerderij' || (s.cat === 'uitje' && s.dur >= 150) || (s.cat === 'museum' && (s.prio || 0) >= 4);
+
 const isWet = (w) => (w?.pop ?? 0) >= 60 || weatherInfo(w?.code).wet;
 
 function score(s, date, w, prefs, fam, ctx = {}) {
@@ -28,8 +31,10 @@ function score(s, date, w, prefs, fam, ctx = {}) {
   // 'in de omgeving' (verder dan ±2 km van het centrum) alleen als er tijd over is
   if (ctx.center && s.cat !== 'dagtrip') {
     const km = s.km ?? distKm(ctx.center, s);
-    if (km > 2) sc -= (km - 2) * (s.cat === 'natuur' ? 1 : 3);
+    if (km > 2) sc -= (km - 2) * (BIG(s) ? 0.4 : s.cat === 'natuur' ? 1 : 3);
   }
+  // kinderboerderij en binnenspeeltuin: vooral leuk met kinderen
+  if (!fam && (s.short === 'Kinderboerderij' || s.short === 'Binnenspeeltuin')) sc -= 6;
   const i = prefs.interests || [];
   if (i.includes('cultuur') && (s.cat === 'museum' || s.cat === 'historisch')) sc += 2;
   if (i.includes('natuur') && (s.cat === 'natuur' || s.cat === 'dagtrip')) sc += 2.5;
@@ -52,6 +57,10 @@ function pickFood(list, from, used, meal, { fam, favs } = {}) {
     if (meal === 'lunch' ? r.meal === 'diner' : r.meal === 'lunch') continue;
     if (fam && /fine dining/i.test(r.cuisine || '')) continue;
     let sc = -distKm(from, r) * (meal === 'lunch' ? 2.5 : 1.5);
+    // snackbar, shoarma, kebab: alleen als er niets anders in de buurt is
+    if (/snack|friture|frituur|kebab|shoarma|shawarma|d[öo]ner|fast|burger king|mcdonald|kfc|subway|domino/i.test(`${r.name} ${r.cuisine || ''}`)) sc -= 6;
+    // dieren- of themacafés: leuk, maar geen standaardkeuze
+    if (/katten|kattencaf|cat caf/i.test(r.name || '')) sc -= 3;
     if (favs?.has(r.id)) sc += 5;
     if (fam && r.kids) sc += 3;
     if (meal === 'lunch') sc += (r.allround ? 3 : 0) + (r.meal === 'lunch' ? 1 : 0);
@@ -82,7 +91,8 @@ export function makePlan(trip, allSights, restaurants = [], weather = []) {
 
   // Speelplekken gebruiken we als pauze, niet als bezienswaardigheid.
   const play = fam ? allSights.filter((s) => s.cat === 'spelen') : [];
-  const sights = allSights.filter((s) => s.cat !== 'spelen' && !s.family).map((s) => (
+  // bioscoop, theater, stadion e.d. hangen af van een voorstelling of wedstrijd: niet in de dagplanning
+  const sights = allSights.filter((s) => s.cat !== 'spelen' && !s.family && !s.noPlan).map((s) => (
     young && s.indoor && s.cat !== 'dagtrip' ? { ...s, dur: Math.min(s.dur, 75) } : s));
   const used = new Set();
   const usedFood = new Set();
@@ -160,7 +170,8 @@ export function makePlan(trip, allSights, restaurants = [], weather = []) {
         let best = null, bs = -Infinity;
         for (const s of sights) {
           if (used.has(s.id) || s.cat === 'dagtrip') continue;
-          if ((s.km ?? distKm(ctx.center, s)) > (s.cat === 'natuur' ? 3 : 2)) continue; // verder weg: zie 'tocht door de omgeving'
+          // verder weg: zie 'tocht door de omgeving'. Grote uitjes (dierentuin, pretpark, museum) mogen verder weg liggen.
+          if ((s.km ?? distKm(ctx.center, s)) > (BIG(s) ? 12 : s.cat === 'natuur' ? 3 : 2)) continue;
           const sc = score(s, date, W(date), prefs, fam, ctx) - (picked === 0 && !first ? 0 : distKm(pos, s) * (fam ? 2 : 3));
           if (sc > bs) { bs = sc; best = s; }
         }

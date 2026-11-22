@@ -263,10 +263,121 @@ async function wikidataInfo(ids) {
     const j = await getJSON(`https://www.wikidata.org/w/api.php?action=wbgetentities&format=json&origin=*&props=claims|sitelinks&ids=${ids.slice(i, i + 50).join('|')}`, { headers: WIKI_HEADERS });
     for (const [q, e] of Object.entries(j.entities || {})) {
       const site = (e.claims?.P856 || []).map((c) => c.mainsnak?.datavalue?.value).find(Boolean);
-      out[q] = { website: site || '', fame: Object.keys(e.sitelinks || {}).filter((k) => k.endsWith('wiki')).length };
+      const img = (e.claims?.P18 || []).map((c) => c.mainsnak?.datavalue?.value).find(Boolean);
+      out[q] = {
+        website: site || '', fame: Object.keys(e.sitelinks || {}).filter((k) => k.endsWith('wiki')).length,
+        photo: img ? `https://commons.wikimedia.org/wiki/Special:FilePath/${enc(img.replace(/ /g, '_'))}?width=960` : null,
+        nlwiki: e.sitelinks?.nlwiki?.title || null, enwiki: e.sitelinks?.enwiki?.title || null,
+      };
     }
   }
   return out;
+}
+
+// ---------- OpenStreetMap: uitjes van elke soort ----------
+// Wikipedia kent vooral gebouwen; OpenStreetMap weet wat je kúnt doen: musea, dierentuinen,
+// binnenspeeltuinen, klimhallen, bioscopen, theaters, stadions, torens en molens.
+const NOPLAN = 'noPlan'; // afhankelijk van voorstelling/wedstrijd: wel in de lijst, niet in de dagplanning
+export function osmSightKind(t) {
+  const tour = t.tourism, leis = t.leisure, am = t.amenity, hist = t.historic, sport = t.sport || '';
+  if (tour === 'museum' || tour === 'gallery' || am === 'planetarium') return { cat: 'museum', indoor: true, dur: 100, fee: 'entree', short: tour === 'gallery' ? 'Galerie' : 'Museum' };
+  if (t.zoo === 'petting_zoo') return { cat: 'dieren', indoor: false, dur: 60, fee: null, short: 'Kinderboerderij', fam: { min: 0, buggy: 'ja', text: 'Dieren kijken en aaien: leuk voor de allerkleinsten.' } };
+  if (tour === 'zoo' || tour === 'aquarium' || t.zoo) return { cat: 'dieren', indoor: false, dur: 180, fee: 'entree', short: tour === 'aquarium' ? 'Aquarium' : 'Dierentuin', fam: { min: 0, buggy: 'ja', text: 'Een dagje dieren kijken: voor alle leeftijden.' } };
+  if (tour === 'theme_park') return { cat: 'uitje', indoor: false, dur: 240, fee: 'entree', short: 'Pretpark', fam: { min: 2, buggy: 'ja', text: 'Kijk vooraf welke attracties bij de leeftijd passen.' } };
+  if (leis === 'water_park') return { cat: 'uitje', indoor: true, dur: 150, fee: 'entree', short: 'Zwemparadijs', fam: { min: 2, buggy: 'deels', text: 'Vaak met een peuterbad; zwemdiploma nodig voor de grote baden.' } };
+  if (leis === 'indoor_play' || (leis === 'playground' && t.indoor === 'yes') || /monkey ?town|ballorig|kidz|binnenspeel/i.test(t.name || '')) return { cat: 'uitje', indoor: true, dur: 120, fee: 'entree', short: 'Binnenspeeltuin', fam: { min: 1, buggy: 'ja', text: 'Klimmen en glijden, ook bij regen.' } };
+  if (/climbing|bouldering/.test(sport) || /klim|boulder/i.test(t.name || '')) return { cat: 'uitje', indoor: true, dur: 120, fee: 'entree', short: 'Klimhal', fam: { min: 5, buggy: 'ja', text: 'Vaak kinderklimmen vanaf een jaar of 5; vraag naar begeleiding.' } };
+  if (leis === 'bowling_alley') return { cat: 'uitje', indoor: true, dur: 90, fee: 'entree', short: 'Bowling', fam: { min: 4, buggy: 'ja', text: 'Met hekjes in de goot ook leuk voor kinderen.' }, [NOPLAN]: true };
+  if (leis === 'escape_game') return { cat: 'uitje', indoor: true, dur: 90, fee: 'entree', short: 'Escape room', fam: { min: 10, buggy: 'ja', text: '' }, [NOPLAN]: true };
+  if (leis === 'miniature_golf') return { cat: 'uitje', indoor: false, dur: 60, fee: 'entree', short: 'Midgetgolf', fam: { min: 3, buggy: 'ja', text: 'Leuk voor het hele gezin.' } };
+  if (am === 'cinema') return { cat: 'film', indoor: true, dur: 150, fee: 'entree', short: 'Bioscoop', fam: { min: 4, buggy: 'ja', text: 'Kijk in het programma naar kinderfilms.' }, [NOPLAN]: true };
+  if (am === 'theatre' || am === 'arts_centre' || am === 'concert_hall') return { cat: 'film', indoor: true, dur: 150, fee: 'entree', short: am === 'theatre' ? 'Theater' : 'Cultuurcentrum', fam: { min: 4, buggy: 'ja', text: 'Kijk in het programma naar familievoorstellingen.' }, [NOPLAN]: true };
+  if (leis === 'stadium') return { cat: 'uitje', indoor: false, dur: 150, fee: 'entree', short: 'Stadion', fam: { min: 6, buggy: 'nee', text: 'Bij een wedstrijd: gehoorbescherming voor kinderen is handig.' }, [NOPLAN]: true };
+  if (leis === 'park' || leis === 'nature_reserve') return { cat: 'natuur', indoor: false, dur: 60, fee: 'gratis', short: leis === 'park' ? 'Park' : 'Natuurgebied' };
+  if (tour === 'viewpoint') return { cat: 'wandelen', indoor: false, dur: 20, fee: 'gratis', short: 'Uitzichtpunt', walkby: true };
+  if (hist === 'castle' || hist === 'manor') return { cat: 'historisch', indoor: false, dur: 60, fee: 'buiten', short: hist === 'castle' ? 'Kasteel' : 'Landhuis' };
+  if (hist === 'church' || t.building === 'church') return { cat: 'historisch', indoor: true, dur: 30, fee: null, short: 'Kerk' };
+  if (t.man_made === 'windmill' || hist === 'windmill') return { cat: 'historisch', indoor: false, dur: 20, fee: 'buiten', short: 'Molen', walkby: true };
+  if (hist === 'tower' || t.man_made === 'tower') return { cat: 'historisch', indoor: false, dur: 25, fee: 'buiten', short: 'Toren', walkby: true };
+  if (hist === 'city_gate') return { cat: 'historisch', indoor: false, dur: 15, fee: 'gratis', short: 'Stadspoort', walkby: true };
+  if (hist) return { cat: 'historisch', indoor: false, dur: 20, fee: 'buiten', short: 'Historisch', walkby: true };
+  return { cat: 'historisch', indoor: false, dur: 45, fee: null, short: 'Bezienswaardigheid' };
+}
+
+export function osmSights(lat, lon, radius = 6000) {
+  return cached(`os1.${lat.toFixed(3)},${lon.toFixed(3)}`, 7 * 864e5, async () => {
+    const A = `(around:${radius},${lat},${lon})`;
+    const q = `[out:json][timeout:25];(
+      nwr["tourism"~"^(museum|gallery|zoo|aquarium|theme_park|attraction|viewpoint)$"]["name"]${A};
+      nwr["zoo"]["name"]${A};
+      nwr["amenity"~"^(cinema|theatre|arts_centre|planetarium)$"]["name"]${A};
+      nwr["leisure"~"^(water_park|stadium|indoor_play|bowling_alley|escape_game|miniature_golf)$"]["name"]${A};
+      nwr["leisure"="playground"]["indoor"="yes"]["name"]${A};
+      nwr["sport"~"climbing|bouldering"]["name"]${A};
+      nwr["leisure"~"^(park|nature_reserve)$"]["name"]["wikidata"]${A};
+      nwr["historic"~"^(castle|manor|tower|city_gate|windmill|monument|church|fort|ruins)$"]["name"]["wikidata"]${A};
+      nwr["man_made"="windmill"]["name"]${A};
+    );out center tags 400;`;
+    let elements;
+    try { elements = (await overpass(q)).elements || []; }
+    catch { elements = await nominatimSights(lat, lon); }
+    return elements.map((e) => {
+      const t = e.tags || {};
+      const la = e.lat ?? e.center?.lat, lo = e.lon ?? e.center?.lon;
+      if (!la || !t.name) return null;
+      // losse dierenverblijven ("kippen", "geiten") en naamloze onderdelen overslaan
+      if (t.attraction === 'animal' || t.zoo === 'enclosure' || (/^[a-z]/.test(t.name) && !t.wikidata)) return null;
+      const k = osmSightKind(t);
+      const wp = (t.wikipedia || '').match(/^(\w+):(.+)$/);
+      return {
+        id: `s${e.type[0]}${e.id}`, name: t.name, lat: la, lon: lo, ...k,
+        address: [t['addr:street'], t['addr:housenumber']].filter(Boolean).join(' '),
+        website: t.website || t['contact:website'] || '', hours: t.opening_hours || '',
+        wiki: wp ? [wp[1], wp[2]] : null, wikidata: t.wikidata || null,
+        photos: t.image && /^https?:.*\.(jpe?g|png)$/i.test(t.image) ? [t.image] : [],
+        fee: t.fee === 'no' ? 'gratis' : t.fee === 'yes' ? 'entree' : k.fee,
+      };
+    }).filter(Boolean);
+  });
+}
+
+// Reserve als Overpass niet reageert: per soort zoeken via Nominatim.
+async function nominatimSights(lat, lon) {
+  const d = 0.06, dl = d / Math.cos(lat * Math.PI / 180); // ±6,5 km, ook in oost-west richting
+  const box = [lon - dl, lat + d, lon + dl, lat - d].map((x) => x.toFixed(4)).join(',');
+  const terms = ['museum', 'zoo', 'aquarium', 'attraction', 'theme park', 'cinema', 'theatre', 'castle', 'windmill', 'tower', 'stadium', 'petting zoo', 'climbing', 'indoor playground', 'monkey town', 'ballorig', 'water park'];
+  const out = [];
+  for (const term of terms) {
+    try {
+      const j = await getJSON(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=30&extratags=1&addressdetails=1&bounded=1&viewbox=${box}&q=${enc(term)}`);
+      for (const r of j) {
+        if (!r.name) continue;
+        const t = { ...(r.extratags || {}), name: r.name, [r.category]: r.type, 'addr:street': r.address?.road, 'addr:housenumber': r.address?.house_number };
+        if (term === 'climbing') t.sport = 'climbing';
+        if (term === 'indoor playground' || term === 'monkey town' || term === 'ballorig') t.leisure = 'indoor_play';
+        out.push({ type: r.osm_type || 'node', id: r.osm_id, lat: Number(r.lat), lon: Number(r.lon), tags: t });
+      }
+    } catch { /* volgende soort */ }
+    await new Promise((res) => setTimeout(res, 1100)); // Nominatim: max. 1 verzoek per seconde
+  }
+  const seen = new Set();
+  return out.filter((e) => { const k = e.type + e.id; if (seen.has(k)) return false; seen.add(k); return true; });
+}
+
+// Wikipedia/Wikidata bij OpenStreetMap-uitjes: foto, website, bekendheid en Wikipedia-artikel.
+export async function enrichOsmSights(list) {
+  const ids = [...new Set(list.map((s) => s.wikidata).filter((q) => /^Q\d+$/.test(q || '')))];
+  const wd = ids.length ? await wikidataInfo(ids).catch(() => ({})) : {};
+  for (const s of list) {
+    const info = wd[s.wikidata] || {};
+    if (!s.photos.length && info.photo) s.photos = [info.photo];
+    if (!s.website && info.website) s.website = info.website;
+    if (!s.wiki && (info.nlwiki || info.enwiki)) s.wiki = info.nlwiki ? ['nl', info.nlwiki] : ['en', info.enwiki];
+    const fame = Math.log2((info.fame || 0) + 1);
+    const bonus = s.short === 'Kinderboerderij' ? 0 : ({ museum: 1, dieren: 1.5, uitje: 0.5 }[s.cat] || 0);
+    s.prio = Math.min(5, Math.max(1, Math.round(1.5 + fame * 0.8 + bonus + (s.website ? 0.3 : 0) - (s.walkby ? 1 : 0))));
+  }
+  return list;
 }
 
 export function wikiSights(lat, lon, lang = 'nl') {

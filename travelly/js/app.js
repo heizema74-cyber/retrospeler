@@ -572,7 +572,7 @@ ${familyOf(trip) && g?.familyTips ? `<section class="block"><div class="block-h"
 
 // ------------------------------------------------------------------ LIJSTEN
 const LISTS = {
-  sight: { title: 'Bezienswaardigheden', path: 'zien', filters: [['top', 'Aanbevolen'], ['gratis', 'Gratis'], ['museum', 'Musea'], ['historisch', 'Historisch'], ['natuur', 'Natuur'], ['wandelen', 'Wandelen'], ['binnen', 'Bij regen'], ['dagtrip', 'Dagtrips']] },
+  sight: { title: 'Bezienswaardigheden', path: 'zien', filters: [['top', 'Aanbevolen'], ['gratis', 'Gratis'], ['museum', 'Musea'], ['uitjes', 'Uitjes'], ['film', 'Film & theater'], ['historisch', 'Historisch'], ['natuur', 'Natuur'], ['wandelen', 'Wandelen'], ['binnen', 'Bij regen'], ['dagtrip', 'Dagtrips']] },
   hotel: { title: 'Hotels', path: 'hotels', filters: [['all', 'Alles'], ['centrum', 'Dichtbij centrum'], ['boutique', 'Boutique'], ['station', 'Bij station']] },
   food: { title: 'Restaurants', path: 'eten', filters: [['all', 'Alles'], ['lunch', 'Lunch'], ['diner', 'Diner'], ['dichtbij', 'Dichtbij']] },
 };
@@ -613,9 +613,10 @@ async function listPage(id, kind) {
     let l = all.slice();
     if (kind === 'sight') {
       const fs = (s) => { const f = kidFit(s, fam); return f ? (f.level === 'top' ? 3 : f.level === 'deels' ? 1 : -4) : 0; };
-      if (filter === 'top') l = l.filter((s) => s.cat !== 'dagtrip' && s.cat !== 'spelen').sort((a, b) => (b.prio + fs(b)) - (a.prio + fs(a)) || (a.rank ?? 0) - (b.rank ?? 0) || a.km - b.km);
+      if (filter === 'top') l = l.filter((s) => s.cat !== 'dagtrip' && s.cat !== 'spelen' && s.cat !== 'film').sort((a, b) => (b.prio + fs(b)) - (a.prio + fs(a)) || (a.rank ?? 0) - (b.rank ?? 0) || a.km - b.km);
       else if (filter === 'kids') l = l.filter((s) => s.cat !== 'dagtrip' && kidFit(s, fam)?.level !== 'nee').sort((a, b) => fs(b) - fs(a) || b.prio - a.prio);
       else if (filter === 'binnen') l = l.filter((s) => s.indoor && s.cat !== 'spelen');
+      else if (filter === 'uitjes') l = l.filter((s) => ['dieren', 'uitje', 'spelen'].includes(s.cat)).sort((a, b) => b.prio - a.prio || a.km - b.km);
       else if (filter === 'gratis') l = l.filter((s) => s.fee === 'gratis' || s.fee === 'buiten').sort((a, b) => b.prio - a.prio || a.km - b.km);
       else l = l.filter((s) => s.cat === filter);
       // plekken verder weg apart, onder 'In de omgeving'

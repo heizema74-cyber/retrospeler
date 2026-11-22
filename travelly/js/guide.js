@@ -2,7 +2,7 @@
 // voor elke andere stad automatisch samengesteld uit Wikipedia en OpenStreetMap.
 
 import { LEIDEN } from './data/leiden.js';
-import { wikiSights, osmPlaces, distKm, parseISO, tripDates, commonsFacade } from './api.js';
+import { wikiSights, osmPlaces, osmSights, enrichOsmSights, distKm, parseISO, tripDates, commonsFacade } from './api.js';
 
 export const GUIDES = { leiden: LEIDEN };
 
@@ -29,6 +29,9 @@ export const CAT = {
   wandelen: { label: 'Wandelen', icon: 'walk' },
   dagtrip: { label: 'Dagtrip', icon: 'suitcase' },
   spelen: { label: 'Spelen', icon: 'smile' },
+  dieren: { label: 'Dieren', icon: 'tree' },
+  uitje: { label: 'Uitje', icon: 'sparkles' },
+  film: { label: 'Film & theater', icon: 'ticket' },
 };
 
 // ---------- reisgezelschap ----------
@@ -79,6 +82,9 @@ export function genericFam(p) {
     case 'natuur': return { min: 0, buggy: 'ja', text: 'Buiten, met ruimte om te rennen: meestal fijn met kinderen.' };
     case 'museum': return { min: 5, buggy: null, text: 'Vraag bij de kassa naar een kinderroute of speurtocht, en houd het bezoek kort met jonge kinderen.' };
     case 'spelen': return { min: 0, buggy: 'ja', text: '' };
+    case 'dieren': return { min: 0, buggy: 'ja', text: 'Dieren kijken: voor alle leeftijden.' };
+    case 'uitje': return { min: 3, buggy: 'deels', text: '' };
+    case 'film': return { min: 4, buggy: 'ja', text: 'Kijk in het programma naar voorstellingen voor kinderen.' };
     default: return { min: 4, buggy: 'deels', text: 'Kort bezoek; vertel er een verhaal bij, dan blijft het spannend.' };
   }
 }
@@ -94,7 +100,7 @@ function decorate(list, kind, center) {
       kind,
       km: distKm(center, p),
       photo: p.photos?.[0] || null,
-      sub: kind === 'sight' ? (CAT[p.cat]?.label || '') : kind === 'hotel' ? (p.style || 'Hotel') : (p.cuisine || 'Restaurant'),
+      sub: kind === 'sight' ? (['dieren', 'uitje', 'film'].includes(p.cat) && p.short && p.short.length < 22 ? p.short : CAT[p.cat]?.label || '') : kind === 'hotel' ? (p.style || 'Hotel') : (p.cuisine || 'Restaurant'),
     };
     registry.set(d.id, d);
     return d;
@@ -106,12 +112,36 @@ export async function sightsFor(city) {
   if (g) return decorate(g.sights, 'sight', g);
   const k = `s${city.lat},${city.lon}`;
   if (!memo.has(k)) {
-    memo.set(k, wikiSights(city.lat, city.lon, 'nl')
-      .then((r) => (r.length >= 6 ? r : wikiSights(city.lat, city.lon, 'en')))
-      .then((r) => decorate(r, 'sight', city))
-      .catch((e) => { memo.delete(k); throw e; }));
+    memo.set(k, Promise.allSettled([
+      osmSights(city.lat, city.lon).then(enrichOsmSights),
+      wikiSights(city.lat, city.lon, 'nl').then((r) => (r.length >= 6 ? r : wikiSights(city.lat, city.lon, 'en'))),
+    ]).then(([o, w]) => {
+      if (o.status === 'rejected' && w.status === 'rejected') throw o.reason;
+      return decorate(mergeSights(o.value || [], w.value || []), 'sight', city);
+    }).catch((e) => { memo.delete(k); throw e; }));
   }
   return memo.get(k);
+}
+
+// OpenStreetMap (wat je kunt doen) + Wikipedia (foto's en verhalen), zonder dubbele plekken.
+const norm = (s = '') => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s*\(.*\)/, '').replace(/[^a-z0-9]+/g, ' ').trim();
+function mergeSights(osm, wiki) {
+  const out = osm.map((s) => ({ ...s }));
+  for (const w of wiki) {
+    const twin = out.find((s) => (s.wiki && w.wiki && s.wiki[1] === w.wiki[1])
+      || (norm(s.name) === norm(w.name) && distKm(s, w) < 0.4)
+      || (distKm(s, w) < 0.08 && (norm(s.name).includes(norm(w.name)) || norm(w.name).includes(norm(s.name)))));
+    if (twin) {
+      // aanvullen: foto, korte omschrijving, Wikipedia, website, bekendheid
+      if (!twin.photos?.length && w.photos?.length) twin.photos = w.photos;
+      if (!twin.wiki) twin.wiki = w.wiki;
+      if (!twin.website && w.website) twin.website = w.website;
+      if (w.short && (!twin.short || /^(Museum|Toren|Molen|Kerk|Historisch|Bezienswaardigheid)$/.test(twin.short))) twin.short = w.short;
+      twin.prio = Math.max(twin.prio || 1, w.prio || 1);
+    } else out.push(w);
+  }
+  // musea, dierentuinen en uitjes met foto of Wikipedia eerst; daarna de rest
+  return out.sort((a, b) => (b.prio || 1) - (a.prio || 1)).slice(0, 90);
 }
 
 export async function placesFor(city, kind) {
