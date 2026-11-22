@@ -200,7 +200,8 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 .welcome-brand { position: absolute; top: calc(40px + env(safe-area-inset-top, 0px)); left: 0; right: 0; text-align: center; }
 .welcome-brand .logo { width: 34px; height: 42px; color: var(--ink); margin: 0 auto 6px; }
 .welcome-brand h1 { font: 600 58px/1 var(--serif); letter-spacing: -.02em; }
-.welcome-brand p { font: 500 20px var(--serif); color: var(--ink-2); margin-top: 4px; }
+.welcome-brand p { font: 600 21px var(--serif); color: var(--ink); margin-top: 4px; text-shadow: 0 0 12px rgba(246,242,234,1), 0 0 4px rgba(246,242,234,1); }
+.welcome-brand h1 { text-shadow: 0 0 18px rgba(246,242,234,.9); }
 .welcome-body { max-width: 520px; margin: -40px auto 0; padding: 0 24px 40px; position: relative; display: grid; gap: 14px; }
 .welcome-body h2 { font: 600 28px/1.2 var(--serif); }
 .features { list-style: none; padding: 0; margin: 4px 0 12px; display: grid; gap: 12px; }

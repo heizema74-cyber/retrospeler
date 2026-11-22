@@ -686,7 +686,7 @@ async function mapPage(id) {
     else if (filter === 'all') pts = [...data.sight.filter((s) => s.km < 6), ...data.hotel, ...data.food];
     else pts = data[filter];
     pts.forEach((p) => markers.push(marker(map, p, { kind: filter === 'fav' ? 'fav' : p.kind, onClick: show })));
-    if (refit && pts.length) fit(map, filter === 'all' ? data.sight.filter((s) => s.km < 3) : pts.filter((p) => (p.km ?? 0) < 6));
+    if (refit && pts.length) fit(map, filter === 'all' ? data.sight.filter((s) => s.km < 1) : pts.filter((p) => (p.km ?? 0) < 6), 20);
   };
   $('#mf').onclick = (e) => { const b = e.target.closest('[data-k]'); if (!b) return; $$('#mf .chip').forEach((x) => x.classList.toggle('on', x === b)); filter = b.dataset.k; $('#mc').hidden = true; draw(true); };
   draw(false);
