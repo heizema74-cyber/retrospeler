@@ -159,6 +159,8 @@ function updateNav(path) {
 
 async function router() {
   cleanup.forEach((fn) => { try { fn(); } catch { /* */ } });
+  // vensters (bewerken, foto) sluiten zodra je naar een ander scherm gaat
+  $$('.sheet-wrap').forEach((w) => w.remove());
   cleanup = [];
   const path = decodeURI(location.hash.replace(/^#/, '').split('?')[0]) || '/';
   for (const [re, fn] of routes) {
@@ -831,7 +833,9 @@ async function planning(id) {
     const mapB = e.target.closest('[data-map]');
     if (addB) return editItem(trip, addB.dataset.add, null);
     if (mapB) return toggleDayMap(trip, mapB.dataset.map, mapB);
-    if (it && !e.target.closest('a')) editItem(trip, it.dataset.day, it.dataset.item);
+    if (!it || e.target.closest('a')) return;
+    // potlood, of tik op een eigen onderdeel zonder plek: aanpassen
+    editItem(trip, it.dataset.day, it.dataset.item);
   });
 }
 
@@ -849,7 +853,7 @@ function planIntro(trip) {
       <li>${icon(fam ? 'baby' : 'users')} <span><b>Wie er meegaat:</b> ${fam ? `kinderen van ${esc(fam.label)}: plekken die bij hun leeftijd passen, speelpauze, rustmoment en vroeg eten.` : esc(partyLabel(trip)) + '.'}</span></li>
       <li>${icon('food')} <span><b>Eten:</b> lunch en diner dicht bij waar jullie op dat moment zijn, elke keer ergens anders.</span></li>
     </ul>
-    <p class="hint">${icon('edit')} Tik op een onderdeel om het aan te passen, of voeg zelf iets toe. De uitleg per dag past zich daarop aan.</p>
+    <p class="hint">${icon('edit')} Tik op een plek om hem te bekijken, of op het potlood om de tijd of omschrijving aan te passen. De uitleg per dag past zich daarop aan.</p>
   </details>`;
 }
 
@@ -873,13 +877,13 @@ function dayCard(trip, d, i, w, ex) {
       return `<li class="tl-i k-${it.kind}" data-item="${it.id}" data-day="${d.date}" tabindex="0">
         <time>${it.time}</time>
         <span class="dot">${icon(it.kind === 'sight' ? 'landmark' : it.kind === 'food' ? 'food' : it.kind === 'hotel' ? 'bed' : it.icon || 'pin')}</span>
-        <div class="tl-b">
+        ${link ? `<a class="tl-b tl-link" href="${link}">` : '<div class="tl-b">'}
           ${walk && walk > 2 ? `<small class="walk">${icon('walk')} ${walk} min lopen</small>` : ''}
-          <b>${esc(it.title)}</b>
+          <b>${esc(it.title)}${link ? ` ${icon('right', 'tl-arrow')}` : ''}</b>
           ${it.sub ? `<small>${esc(it.sub)}</small>` : ''}
           ${it.note ? `<p>${esc(it.note)}</p>` : ''}
-        </div>
-        ${link ? `<a class="tl-go" href="${link}" aria-label="Bekijk ${esc(it.title)}">${icon('right')}</a>` : `<span class="tl-go">${icon('edit')}</span>`}
+        ${link ? '</a>' : '</div>'}
+        <button class="tl-go" data-edit aria-label="${esc(it.title)} aanpassen">${icon('edit')}</button>
       </li>`;
     }).join('') || '<li class="tl-empty">Nog niets gepland.</li>'}</ol>
     <div class="day-f">

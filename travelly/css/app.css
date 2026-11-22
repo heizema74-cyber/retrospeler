@@ -634,3 +634,9 @@ details[open] > summary > .ic:last-child { transform: rotate(180deg); }
 .muted.small, p.small { font-size: 12px; }
 .dishline { display: flex; gap: 5px; align-items: flex-start; color: var(--ink-2) !important; }
 .dishline .ic { width: 13px; height: 13px; margin-top: 2px; color: var(--gold); flex: none; }
+.tl-link { color: inherit; }
+.tl-link b { color: var(--ink); }
+.tl-link:hover b { text-decoration: underline; text-underline-offset: 3px; }
+.tl-arrow { width: 14px !important; height: 14px !important; vertical-align: -2px; color: var(--accent); }
+button.tl-go { border: 0; background: transparent; border-radius: 8px; cursor: pointer; padding: 8px; margin: -4px -4px 0 0; }
+button.tl-go:hover { background: var(--line-2); color: var(--ink); }

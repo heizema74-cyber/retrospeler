@@ -32,8 +32,11 @@ export function marker(map, p, { kind = p.kind, label = '', active = false, onCl
     icon: L.divIcon({ html, className: 'mk-wrap', iconSize: [34, 34], iconAnchor: [17, 17] }),
     title: p.name || p.title || '',
     keyboard: true,
+    riseOnHover: true,
+    // restaurants en hotels liggen boven de bezienswaardigheden, zodat je ze kunt aantikken
+    zIndexOffset: kind === 'food' || kind === 'hotel' ? 500 : 0,
   }).addTo(map);
-  if (onClick) m.on('click', () => onClick(p, m));
+  if (onClick) m.on('click', () => { m.setZIndexOffset(2000); onClick(p, m); });
   return m;
 }
 
