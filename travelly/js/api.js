@@ -294,12 +294,12 @@ export function osmSightKind(t) {
   if (am === 'cinema') return { cat: 'film', indoor: true, dur: 150, fee: 'entree', short: 'Bioscoop', fam: { min: 4, buggy: 'ja', text: 'Kijk in het programma naar kinderfilms.' }, [NOPLAN]: true };
   if (am === 'theatre' || am === 'arts_centre' || am === 'concert_hall') return { cat: 'film', indoor: true, dur: 150, fee: 'entree', short: am === 'theatre' ? 'Theater' : 'Cultuurcentrum', fam: { min: 4, buggy: 'ja', text: 'Kijk in het programma naar familievoorstellingen.' }, [NOPLAN]: true };
   if (leis === 'stadium') return { cat: 'uitje', indoor: false, dur: 150, fee: 'entree', short: 'Stadion', fam: { min: 6, buggy: 'nee', text: 'Bij een wedstrijd: gehoorbescherming voor kinderen is handig.' }, [NOPLAN]: true };
-  if (/swimming/.test(sport) || leis === 'swimming_area' || /zwembad|zwemba[dt]|\bbad\b/i.test(t.name || '')) return { cat: 'uitje', indoor: t.leisure !== 'swimming_area', dur: 120, fee: 'entree', short: 'Zwembad', fam: { min: 1, buggy: 'deels', text: 'Kijk of er een peuterbad is en wanneer er recreatief zwemmen is.' } };
+  if (/swimming/.test(sport) || leis === 'swimming_area' || leis === 'swimming_pool' || /zwembad|zwemba[dt]|\bbad\b/i.test(t.name || '')) return { cat: 'uitje', indoor: t.leisure !== 'swimming_area', dur: 120, fee: 'entree', short: 'Zwembad', fam: { min: 1, buggy: 'deels', text: 'Kijk of er een peuterbad is en wanneer er recreatief zwemmen is.' } };
   if (leis === 'ice_rink' || /skating/.test(sport)) return { cat: 'uitje', indoor: true, dur: 90, fee: 'entree', short: 'IJsbaan', fam: { min: 4, buggy: 'nee', text: 'Vaak met schaatshulpjes voor kinderen.' } };
   if (leis === 'trampoline_park' || /trampoline/i.test(`${sport} ${t.name}`)) return { cat: 'uitje', indoor: true, dur: 90, fee: 'entree', short: 'Trampolinepark', fam: { min: 3, buggy: 'ja', text: 'Vaak aparte tijden voor peuters.' } };
   if (/karting/.test(sport) || /karting|kartbaan/i.test(t.name || '')) return { cat: 'uitje', indoor: false, dur: 90, fee: 'entree', short: 'Karting', fam: { min: 8, buggy: 'nee', text: 'Kinderkarts vanaf ongeveer 8 jaar.' } };
   if (/laser/i.test(`${sport} ${t.name}`)) return { cat: 'uitje', indoor: true, dur: 60, fee: 'entree', short: 'Lasergame', fam: { min: 7, buggy: 'ja', text: '' }, [NOPLAN]: true };
-  if (/bowling/.test(sport) || /bowling/i.test(t.name || '')) return { cat: 'uitje', indoor: true, dur: 90, fee: 'entree', short: 'Bowling', fam: { min: 4, buggy: 'ja', text: 'Met hekjes in de goot ook leuk voor kinderen.' }, [NOPLAN]: true };
+  if (/bowling|10pin|9pin/.test(sport) || /bowling/i.test(t.name || '')) return { cat: 'uitje', indoor: true, dur: 90, fee: 'entree', short: 'Bowling', fam: { min: 4, buggy: 'ja', text: 'Met hekjes in de goot ook leuk voor kinderen.' }, [NOPLAN]: true };
   if (leis === 'park' || leis === 'nature_reserve') return { cat: 'natuur', indoor: false, dur: 60, fee: 'gratis', short: leis === 'park' ? 'Park' : 'Natuurgebied' };
   if (t.building === 'prison' || hist === 'prison') return { cat: 'historisch', indoor: true, dur: 45, fee: null, short: 'Historisch gebouw' };
   if (tour === 'viewpoint') return { cat: 'wandelen', indoor: false, dur: 20, fee: 'gratis', short: 'Uitzichtpunt', walkby: true };
@@ -313,7 +313,7 @@ export function osmSightKind(t) {
 }
 
 export function osmSights(lat, lon, radius = 6000) {
-  return cached(`os2.${lat.toFixed(3)},${lon.toFixed(3)}`, 7 * 864e5, async () => {
+  return cached(`os4.${lat.toFixed(3)},${lon.toFixed(3)}`, 7 * 864e5, async () => {
     const A = `(around:${radius},${lat},${lon})`;
     const q = `[out:json][timeout:25];(
       nwr["tourism"~"^(museum|gallery|zoo|aquarium|theme_park|attraction|viewpoint)$"]["name"]${A};
@@ -321,7 +321,9 @@ export function osmSights(lat, lon, radius = 6000) {
       nwr["amenity"~"^(cinema|theatre|arts_centre|planetarium)$"]["name"]${A};
       nwr["leisure"~"^(water_park|stadium|indoor_play|bowling_alley|escape_game|miniature_golf|ice_rink|trampoline_park)$"]["name"]${A};
       nwr["leisure"="playground"]["indoor"="yes"]["name"]${A};
-      nwr["leisure"="sports_centre"]["sport"~"swimming|climbing|bouldering|bowling|karting|ice_skating|trampoline"]["name"]${A};
+      nwr["leisure"="sports_centre"]["sport"~"swimming|climbing|bouldering|bowling|10pin|9pin|karting|ice_skating|trampoline"]["name"]${A};
+      nwr["sport"~"10pin|9pin"]["name"]${A};
+      nwr["leisure"="swimming_pool"]["name"]["access"!~"private|no|customers"]${A};
       nwr["sport"~"climbing|bouldering|karting"]["name"]${A};
       nwr["leisure"~"^(park|nature_reserve)$"]["name"]["wikidata"]${A};
       nwr["historic"]["name"]["wikidata"]${A};
@@ -336,7 +338,7 @@ export function osmSights(lat, lon, radius = 6000) {
       const la = e.lat ?? e.center?.lat, lo = e.lon ?? e.center?.lon;
       if (!la || !t.name) return null;
       // losse dierenverblijven ("kippen", "geiten") en naamloze onderdelen overslaan
-      if (t.attraction === 'animal' || t.zoo === 'enclosure' || (/^[a-z]/.test(t.name) && !t.wikidata)) return null;
+      if (t.attraction === 'animal' || t.zoo === 'enclosure' || t.shop || (/^[a-z]/.test(t.name) && !t.wikidata)) return null;
       const k = osmSightKind(t);
       const wp = (t.wikipedia || '').match(/^(\w+):(.+)$/);
       return {
@@ -351,6 +353,65 @@ export function osmSights(lat, lon, radius = 6000) {
     // reservelijst is minder volledig: maar 2 uur bewaren, daarna opnieuw proberen
     return { items, __ttl: fallback ? 2 * 3600e3 : undefined };
   }).then((r) => r.items || r);
+}
+
+// ---------- Wikidata: alle musea, zwembaden, molens, dierentuinen… binnen 6 km ----------
+// Wikidata kent bijna alle (Nederlandse) musea, ook kleine, plus zwembaden, molens en parken.
+const WD_CLASSES = 'wd:Q33506 wd:Q43501 wd:Q2281788 wd:Q194195 wd:Q1501 wd:Q41253 wd:Q24354 wd:Q38720 wd:Q23413 wd:Q12518 wd:Q483110 wd:Q22698 wd:Q570116 wd:Q40357 wd:Q148319 wd:Q82117';
+function wdKind(type) {
+  const t = type.toLowerCase();
+  if (/museum|planetarium|galerie/.test(t)) return { cat: 'museum', indoor: true, dur: 100, fee: 'entree', short: 'Museum' };
+  if (/dierentuin|aquarium|zoo|dierenpark/.test(t)) return { cat: 'dieren', indoor: false, dur: 180, fee: 'entree', short: /aquarium/.test(t) ? 'Aquarium' : 'Dierentuin', fam: { min: 0, buggy: 'ja', text: 'Een dagje dieren kijken: voor alle leeftijden.' } };
+  if (/attractiepark|pretpark|themapark|amusement/.test(t)) return { cat: 'uitje', indoor: false, dur: 240, fee: 'entree', short: 'Pretpark', fam: { min: 2, buggy: 'ja', text: 'Kijk vooraf welke attracties bij de leeftijd passen.' } };
+  if (/zwembad|zwemparadijs|swimming/.test(t)) return { cat: 'uitje', indoor: true, dur: 120, fee: 'entree', short: 'Zwembad', fam: { min: 1, buggy: 'deels', text: 'Kijk of er een peuterbad is en wanneer er recreatief zwemmen is.' } };
+  if (/bioscoop|filmtheater|cinema/.test(t)) return { cat: 'film', indoor: true, dur: 150, fee: 'entree', short: 'Bioscoop', noPlan: true };
+  if (/theater|schouwburg|concertgebouw|podium/.test(t)) return { cat: 'film', indoor: true, dur: 150, fee: 'entree', short: 'Theater', noPlan: true };
+  if (/stadion/.test(t)) return { cat: 'uitje', indoor: false, dur: 150, fee: 'entree', short: 'Stadion', noPlan: true };
+  if (/molen|grondzeiler|bovenkruier|zelfzwichter|spinnenkop|wipmolen/.test(t)) return { cat: 'historisch', indoor: false, dur: 20, fee: 'buiten', short: 'Molen', walkby: true };
+  if (/kasteel|burcht|slot|castle|state\b|stins/.test(t)) return { cat: 'historisch', indoor: false, dur: 60, fee: 'buiten', short: 'Kasteel' };
+  if (/poort/.test(t)) return { cat: 'historisch', indoor: false, dur: 15, fee: 'gratis', short: 'Stadspoort', walkby: true };
+  if (/toren|torenspits/.test(t)) return { cat: 'historisch', indoor: false, dur: 20, fee: 'buiten', short: 'Toren', walkby: true };
+  if (/gevangenis/.test(t)) return { cat: 'historisch', indoor: true, dur: 45, fee: null, short: 'Historisch gebouw' };
+  if (/park|tuin|groenvoorziening|bos/.test(t)) return { cat: 'natuur', indoor: false, dur: 60, fee: 'gratis', short: 'Park' };
+  return { cat: 'historisch', indoor: false, dur: 30, fee: null, short: 'Bezienswaardigheid' };
+}
+
+export function wikidataSights(lat, lon, radiusKm = 6) {
+  return cached(`wd2.${lat.toFixed(3)},${lon.toFixed(3)}`, 7 * 864e5, async () => {
+    // FILTER EXISTS i.p.v. een gewone koppeling: anders komt elk resultaat tientallen keren terug
+    const q = `SELECT DISTINCT ?item ?itemLabel ?typeLabel ?lat ?lon ?image ?website ?article ?links WHERE {
+      SERVICE wikibase:around { ?item wdt:P625 ?coord. bd:serviceParam wikibase:center "Point(${lon} ${lat})"^^geo:wktLiteral; wikibase:radius "${radiusKm}". }
+      ?item wdt:P31 ?type.
+      FILTER EXISTS { VALUES ?cls { ${WD_CLASSES} } ?type wdt:P279* ?cls. }
+      FILTER NOT EXISTS { ?item wdt:P576 [] }
+      BIND(geof:latitude(?coord) AS ?lat) BIND(geof:longitude(?coord) AS ?lon)
+      OPTIONAL { ?item wdt:P18 ?image } OPTIONAL { ?item wdt:P856 ?website }
+      OPTIONAL { ?article schema:about ?item; schema:isPartOf <https://nl.wikipedia.org/> }
+      ?item wikibase:sitelinks ?links.
+      SERVICE wikibase:label { bd:serviceParam wikibase:language "nl,en". }
+    } LIMIT 2500`;
+    const j = await getJSON(`https://query.wikidata.org/sparql?format=json&query=${enc(q)}`, { headers: { Accept: 'application/sparql-results+json' } }, 25000);
+    const byQ = new Map();
+    for (const b of j.results?.bindings || []) {
+      const id = b.item.value.split('/').pop();
+      const name = b.itemLabel?.value || '';
+      if (!name || /^Q\d+$/.test(name)) continue;
+      const links = Number(b.links?.value || 0);
+      if (!links && !b.image) continue; // te onbekend en zonder foto
+      const prev = byQ.get(id);
+      const k = wdKind(b.typeLabel?.value || '');
+      // bij meerdere soorten: museum/dieren/uitje gaan voor
+      if (prev && !(['museum', 'dieren', 'uitje'].includes(k.cat) && prev.cat === 'historisch')) continue;
+      byQ.set(id, {
+        id: `q${id}`, name: name[0].toUpperCase() + name.slice(1), lat: Number(b.lat.value), lon: Number(b.lon.value), ...k,
+        wikidata: id, website: b.website?.value || '',
+        photos: b.image ? [b.image.value.replace(/^http:/, 'https:') + '?width=960'] : [],
+        wiki: b.article ? ['nl', decodeURIComponent(b.article.value.split('/wiki/')[1]).replace(/_/g, ' ')] : null,
+        prio: Math.min(5, Math.max(1, Math.round(1.5 + Math.log2(links + 1) * 0.8 + ({ museum: 1, dieren: 1.5, uitje: 0.5 }[k.cat] || 0) - (k.walkby ? 1 : 0)))),
+      });
+    }
+    return [...byQ.values()];
+  });
 }
 
 // Reserve als Overpass niet reageert: per soort zoeken via Nominatim.

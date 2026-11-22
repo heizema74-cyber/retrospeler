@@ -2,7 +2,7 @@
 // voor elke andere stad automatisch samengesteld uit Wikipedia en OpenStreetMap.
 
 import { LEIDEN } from './data/leiden.js';
-import { wikiSights, osmPlaces, osmSights, enrichOsmSights, distKm, parseISO, tripDates, commonsFacade } from './api.js';
+import { wikiSights, wikidataSights, osmPlaces, osmSights, enrichOsmSights, distKm, parseISO, tripDates, commonsFacade } from './api.js';
 
 export const GUIDES = { leiden: LEIDEN };
 
@@ -114,10 +114,11 @@ export async function sightsFor(city) {
   if (!memo.has(k)) {
     memo.set(k, Promise.allSettled([
       osmSights(city.lat, city.lon).then(enrichOsmSights),
+      wikidataSights(city.lat, city.lon).catch(() => []),
       wikiSights(city.lat, city.lon, 'nl').then((r) => (r.length >= 6 ? r : wikiSights(city.lat, city.lon, 'en'))),
-    ]).then(([o, w]) => {
-      if (o.status === 'rejected' && w.status === 'rejected') throw o.reason;
-      return decorate(mergeSights(o.value || [], w.value || []), 'sight', city);
+    ]).then(([o, d, w]) => {
+      if (o.status === 'rejected' && w.status === 'rejected' && !(d.value || []).length) throw o.reason;
+      return decorate(mergeSights(o.value || [], [...(d.value || []), ...(w.value || [])]), 'sight', city);
     }).catch((e) => { memo.delete(k); throw e; }));
   }
   return memo.get(k);
@@ -128,7 +129,9 @@ const norm = (s = '') => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''
 function mergeSights(osm, wiki) {
   const out = osm.map((s) => ({ ...s }));
   for (const w of wiki) {
-    const twin = out.find((s) => (s.wiki && w.wiki && s.wiki[1] === w.wiki[1])
+    const twin = out.find((s) => (s.wikidata && w.wikidata && s.wikidata === w.wikidata)
+      || (s.wiki && w.wiki && s.wiki[1] === w.wiki[1])
+      || distKm(s, w) < 0.03
       || (norm(s.name) === norm(w.name) && distKm(s, w) < 0.4)
       || (distKm(s, w) < 0.08 && (norm(s.name).includes(norm(w.name)) || norm(w.name).includes(norm(s.name)))));
     if (twin) {
@@ -136,6 +139,9 @@ function mergeSights(osm, wiki) {
       if (!twin.photos?.length && w.photos?.length) twin.photos = w.photos;
       if (!twin.wiki) twin.wiki = w.wiki;
       if (!twin.website && w.website) twin.website = w.website;
+      if (!twin.wikidata && w.wikidata) twin.wikidata = w.wikidata;
+      // museum/dieren/uitje uit Wikidata is specifieker dan 'historisch' uit een andere bron
+      if (twin.cat === 'historisch' && ['museum', 'dieren', 'uitje', 'film'].includes(w.cat)) Object.assign(twin, { cat: w.cat, indoor: w.indoor, dur: w.dur, fee: w.fee, noPlan: w.noPlan, walkby: false });
       if (w.short && (!twin.short || /^(Museum|Toren|Molen|Kerk|Historisch|Bezienswaardigheid)$/.test(twin.short))) twin.short = w.short;
       twin.prio = Math.max(twin.prio || 1, w.prio || 1);
     } else out.push(w);
