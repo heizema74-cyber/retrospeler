@@ -666,3 +666,6 @@ button.tl-go:hover { background: var(--line-2); color: var(--ink); }
 .linkbtn.danger { color: #A3483F; }
 .city.on { background: var(--accent-soft); border-color: var(--accent); }
 .fee.own { background: #FBF0E6; color: var(--terra); }
+.hidden-list { margin: 8px 18px 0; max-width: 640px; }
+.hidden-list .row { justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--line-2); }
+.hidden-list .row .btn { flex: 0 0 auto; }

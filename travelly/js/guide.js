@@ -166,11 +166,13 @@ export async function placesFor(city, kind) {
 export function customFor(trip, kind) {
   return decorate((trip.custom || []).filter((c) => c.kind === kind), kind, trip.city);
 }
+// Verborgen plekken (bv. gesloopt of gesloten) laten we weg: trip.hidden = { id: naam }
+const notHidden = (trip) => (p) => !trip.hidden?.[p.id];
 export async function sightsForTrip(trip) {
-  return [...customFor(trip, 'sight'), ...await sightsFor(trip.city).catch((e) => (trip.custom?.length ? [] : Promise.reject(e)))];
+  return [...customFor(trip, 'sight'), ...await sightsFor(trip.city).catch((e) => (trip.custom?.length ? [] : Promise.reject(e)))].filter(notHidden(trip));
 }
 export async function placesForTrip(trip, kind) {
-  return [...customFor(trip, kind), ...await placesFor(trip.city, kind).catch((e) => (customFor(trip, kind).length ? [] : Promise.reject(e)))];
+  return [...customFor(trip, kind), ...await placesFor(trip.city, kind).catch((e) => (customFor(trip, kind).length ? [] : Promise.reject(e)))].filter(notHidden(trip));
 }
 
 // Gevelfoto's zoeken voor restaurants/hotels zonder foto (steden zonder eigen gids).

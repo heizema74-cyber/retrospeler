@@ -778,7 +778,8 @@ async function detail(id, pid) {
       ${p.todo?.length ? `<section class="dotodo"><h2 class="sec-t">Wat kun je hier doen</h2><ul>${p.todo.map((t) => `<li>${icon('done')}<span>${esc(t)}</span></li>`).join('')}</ul></section>` : ''}
       ${famBlock(trip, p)}
       ${p.closedNote || p.closed ? `<div class="note-line">${icon('info')} ${esc(p.closedNote || '')}${p.closed?.includes(1) ? ' Op maandag gesloten.' : ''} Controleer de actuele openingstijden${p.website ? ' op de website' : ''}.</div>` : ''}
-      ${p.custom ? `<div class="note-line">${icon('user')} Zelf toegevoegd aan deze reis. <button class="linkbtn danger" id="delcustom">Verwijder deze plek</button></div>` : ''}
+      ${p.custom ? `<div class="note-line">${icon('user')} Zelf toegevoegd aan deze reis. <button class="linkbtn danger" id="delcustom">Verwijder deze plek</button></div>`
+        : `<div class="note-line">${icon('info')} Klopt dit niet meer (gesloten of gesloopt)? <button class="linkbtn danger" id="hideplace">Verberg deze plek</button></div>`}
       ${menuBlock(p)}
       ${p.kind !== 'sight' ? `<div class="note-line">${icon('star')} Meer foto's en reviews: bekijk ze in Google Maps.</div>` : ''}
       <div class="addplan">
@@ -795,6 +796,16 @@ async function detail(id, pid) {
     </div>
   </article>`;
 
+  $('#hideplace')?.addEventListener('click', () => {
+    if (!confirm(`${p.name} verbergen? Hij verdwijnt uit de lijsten, de kaart en de planning van deze reis.`)) return;
+    S.updateTrip(id, (t) => {
+      (t.hidden ||= {})[pid] = p.name;
+      if (t.favorites) delete t.favorites[pid];
+      for (const d of t.plan?.days || []) d.items = d.items.filter((i) => i.refId !== pid);
+    });
+    toast(`${p.name} verborgen`);
+    location.hash = `#/r/${id}/${back}`;
+  });
   $('#delcustom')?.addEventListener('click', () => {
     if (!confirm(`${p.name} uit deze reis verwijderen?`)) return;
     S.updateTrip(id, (t) => {
@@ -1317,7 +1328,15 @@ function settings(id) {
     <button id="imp">${icon('upload')}<span>Importeer een reis</span>${icon('right')}</button>
     <button id="del" class="danger">${icon('trash')}<span>Verwijder deze reis</span>${icon('right')}</button>
   </div>
+  ${Object.keys(trip.hidden || {}).length ? `<section class="hidden-list"><h2 class="sec-t">${icon('info')} Verborgen plekken</h2>
+    ${Object.entries(trip.hidden).map(([hid, name]) => `<div class="row"><span>${esc(name)}</span><button class="btn small ghost" data-unhide="${esc(hid)}">Terughalen</button></div>`).join('')}</section>` : ''}
   <p class="credits">Je reizen, notities en foto's worden alleen op dit apparaat bewaard. Wil je ze ook op je computer of telefoon? Exporteer de reis hier en importeer het bestand op het andere apparaat.</p>`;
+  $('.hidden-list')?.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-unhide]'); if (!b) return;
+    S.updateTrip(id, (t) => { delete t.hidden[b.dataset.unhide]; });
+    toast('Plek is weer zichtbaar');
+    settings(id);
+  });
   let tempo = p.tempo || 'normaal';
   const party = { kids: [], ...JSON.parse(JSON.stringify(partyOf(trip))) };
   const before = JSON.stringify(partyClean(party));
