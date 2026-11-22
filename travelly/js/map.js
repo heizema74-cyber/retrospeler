@@ -16,11 +16,15 @@ export function makeMap(el, { lat, lon, zoom = 14, interactive = true } = {}) {
   L.tileLayer(TILES, { maxZoom: 19, attribution: ATTR }).addTo(map);
   map.attributionControl.setPrefix('');
   if (interactive) L.control.zoom({ position: 'bottomright' }).addTo(map);
-  setTimeout(() => map.invalidateSize(), 50);
+  // kaart veilig opruimen, ook als er nog iets aan het laden of animeren is
+  const remove = map.remove.bind(map);
+  map.remove = () => { if (map._dead) return map; map._dead = true; try { map.stop(); remove(); } catch { /* al weg */ } return map; };
+  setTimeout(() => { if (!map._dead) map.invalidateSize(); }, 50);
   return map;
 }
 
 export function marker(map, p, { kind = p.kind, label = '', active = false, onClick } = {}) {
+  if (map._dead) return { remove() {} };
   const html = label
     ? `<div class="mk mk-${kind} mk-num${active ? ' on' : ''}">${label}</div>`
     : `<div class="mk mk-${kind}${active ? ' on' : ''}">${icon(KIND_ICON[kind] || 'pin')}</div>`;
@@ -34,11 +38,13 @@ export function marker(map, p, { kind = p.kind, label = '', active = false, onCl
 }
 
 export function line(map, pts) {
+  if (map._dead) return null;
   if (pts.length < 2) return null;
   return L.polyline(pts.map((p) => [p.lat, p.lon]), { color: '#5B6B55', weight: 3, opacity: 0.7, dashArray: '2 7', lineCap: 'round' }).addTo(map);
 }
 
 export function fit(map, pts, pad = 40) {
+  if (map._dead) return;
   const ok = pts.filter((p) => p.lat);
   if (!ok.length) return;
   if (ok.length === 1) { map.setView([ok[0].lat, ok[0].lon], 15); return; }

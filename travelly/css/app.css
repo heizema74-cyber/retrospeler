@@ -570,3 +570,38 @@ label.btn { display: inline-flex !important; color: var(--ink) !important; font-
 @media (min-width: 1000px) { .toast { left: calc(50% + var(--side) / 2); bottom: 28px; } }
 
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
+
+/* ---------------- reisgezelschap & kinderen ---------------- */
+.party { display: grid; gap: 12px; }
+.ptypes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.ptype { display: grid; justify-items: center; gap: 6px; padding: 12px 4px; border-radius: 14px; border: 1px solid var(--line); background: var(--bg); font-size: 12.5px; font-weight: 500; color: var(--ink-2); line-height: 1.2; text-align: center; }
+.ptype .ic { width: 24px; height: 24px; color: var(--accent); }
+.ptype.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.ptype.on .ic { color: #fff; }
+.prow { display: flex; justify-content: space-between; align-items: center; }
+.prow .stepper output { font-size: 24px; }
+.kids { display: grid; gap: 8px; justify-items: start; }
+.kid { display: flex; align-items: center; gap: 10px; width: 100%; padding: 6px 6px 6px 12px; border-radius: 14px; background: var(--bg); border: 1px solid var(--line); }
+.kid > .ic { color: var(--gold); }
+.kid span { font-weight: 500; flex: none; }
+.kid select { flex: 1; min-height: 40px; padding: 6px 10px; background: var(--paper); }
+.kidfit { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 500; margin-top: 3px; color: var(--accent-2); }
+.kidfit .ic { width: 14px; height: 14px; }
+.kidfit.deels { color: #8B6B2E; }
+.kidfit.nee { color: var(--muted); }
+.dotodo ul { list-style: none; margin: 0; padding: 4px 14px; background: var(--paper); border: 1px solid var(--line-2); border-radius: var(--radius); }
+.dotodo li { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--line-2); font-size: 14.5px; }
+.dotodo li:last-child { border: 0; }
+.dotodo li .ic { color: var(--accent); width: 18px; height: 18px; margin-top: 1px; }
+.dotodo .sec-t, .famblock .sec-t { margin-top: 8px; }
+.famblock { padding: 4px 16px 16px; border-radius: var(--radius); background: #FBF4E6; border: 1px solid #F0E3C6; display: grid; gap: 10px; }
+.famblock.nee { background: var(--paper); border-color: var(--line-2); }
+.famblock .sec-t .ic { color: var(--gold); }
+.famblock .sec-t small { font: 500 15px var(--sans); color: var(--muted); }
+.famblock p { font-size: 14.5px; color: var(--ink-2); }
+.famchips { display: flex; flex-wrap: wrap; gap: 6px; }
+.famchips span { display: inline-flex; align-items: center; gap: 5px; padding: 5px 11px; border-radius: 999px; background: var(--paper); border: 1px solid var(--line-2); font-size: 12.5px; color: var(--ink-2); }
+.famchips .ic { width: 14px; height: 14px; }
+.famchips .ok { background: var(--accent-soft); border-color: var(--accent-soft); color: var(--accent-2); font-weight: 600; }
+.famchips .no { color: var(--muted); text-decoration: line-through; }
+.tip.fam > .ic { color: var(--terra); }

@@ -36,10 +36,10 @@ export const uid = (p = '') => p + Math.random().toString(36).slice(2, 9) + Date
 export function getTrip(id) { return state.trips.find((t) => t.id === id) || null; }
 export function activeTrip() { return getTrip(state.activeTripId) || state.trips[0] || null; }
 
-export function createTrip({ city, start, end, persons, prefs }) {
+export function createTrip({ city, start, end, persons, party, prefs }) {
   const trip = {
     id: uid('t'),
-    city, start, end, persons,
+    city, start, end, persons, party: party || null,
     prefs: prefs || { interests: ['cultuur'], tempo: 'normaal' },
     plan: null,
     favorites: {},

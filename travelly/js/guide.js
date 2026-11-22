@@ -28,7 +28,60 @@ export const CAT = {
   natuur: { label: 'Natuur', icon: 'tree' },
   wandelen: { label: 'Wandelen', icon: 'walk' },
   dagtrip: { label: 'Dagtrip', icon: 'suitcase' },
+  spelen: { label: 'Spelen', icon: 'smile' },
 };
+
+// ---------- reisgezelschap ----------
+// party: { type: 'stel' | 'gezin' | 'vrienden' | 'solo', adults, kids: [leeftijden] }
+export function partyOf(trip) {
+  if (trip.party) return trip.party;
+  const kids = trip.prefs?.interests?.includes('kinderen');
+  return { type: kids ? 'gezin' : trip.persons === 1 ? 'solo' : trip.persons === 2 ? 'stel' : 'vrienden', adults: kids ? 2 : trip.persons, kids: [] };
+}
+export function familyOf(trip) {
+  const p = partyOf(trip);
+  if (p.type !== 'gezin') return null;
+  const kids = (p.kids || []).filter((a) => a != null).map(Number);
+  return { kids, youngest: kids.length ? Math.min(...kids) : 4, oldest: kids.length ? Math.max(...kids) : 6, label: agesLabel(kids) };
+}
+export function agesLabel(kids) {
+  if (!kids.length) return 'jullie kinderen';
+  const a = kids.slice().sort((x, y) => x - y).map((k) => (k === 0 ? 'baby' : String(k)));
+  const list = a.length === 1 ? a[0] : a.slice(0, -1).join(', ') + ' en ' + a[a.length - 1];
+  return `${list}${a[a.length - 1] === 'baby' ? '' : ' jaar'}`;
+}
+export function partyLabel(trip) {
+  const p = partyOf(trip);
+  const ad = p.adults ?? trip.persons;
+  if (p.type === 'gezin') return `${ad} ${ad === 1 ? 'volwassene' : 'volwassenen'} · ${p.kids?.length || 0} ${p.kids?.length === 1 ? 'kind' : 'kinderen'}`;
+  if (p.type === 'stel') return 'Met z\'n tweeën';
+  if (p.type === 'solo') return 'Alleen';
+  return `${ad} personen`;
+}
+
+// Hoe geschikt is een plek voor de kinderen? → { ok: [leeftijden], label, level: 'top' | 'deels' | 'nee' }
+export function kidFit(place, fam) {
+  const f = place.fam || genericFam(place);
+  if (!f || !fam) return null;
+  const ages = fam.kids.length ? fam.kids : [fam.youngest];
+  const ok = ages.filter((a) => a >= f.min);
+  const level = ok.length === ages.length ? 'top' : ok.length ? 'deels' : 'nee';
+  const label = !fam.kids.length ? (f.min <= 4 ? 'Leuk met kinderen' : `Vanaf ${f.min} jaar`)
+    : level === 'top' ? (ages.length > 1 ? `Leuk voor ${agesLabel(ages)}` : `Leuk voor ${agesLabel(ages)}`)
+    : level === 'deels' ? `Leuk voor ${agesLabel(ok)}` : `Pas vanaf ${f.min} jaar`;
+  return { ...f, ok, level, label };
+}
+
+// Voor steden zonder eigen gids: een redelijke inschatting per soort plek.
+export function genericFam(p) {
+  if (p.kind && p.kind !== 'sight') return null;
+  switch (p.cat) {
+    case 'natuur': return { min: 0, buggy: 'ja', text: 'Buiten, met ruimte om te rennen: meestal fijn met kinderen.' };
+    case 'museum': return { min: 5, buggy: null, text: 'Vraag bij de kassa naar een kinderroute of speurtocht, en houd het bezoek kort met jonge kinderen.' };
+    case 'spelen': return { min: 0, buggy: 'ja', text: '' };
+    default: return { min: 4, buggy: 'deels', text: 'Kort bezoek; vertel er een verhaal bij, dan blijft het spannend.' };
+  }
+}
 
 const memo = new Map();
 
@@ -100,6 +153,11 @@ export function adviceFor(trip, weather = []) {
   const days = new Set(dates.map((d) => parseISO(d).getDay()));
   for (const [wd, text] of Object.entries(wk)) if (days.has(Number(wd))) out.push({ id: 'wd' + wd, title: text.split(':')[0], text: text.split(':').slice(1).join(':').trim(), icon: 'calendar' });
 
+  const fam = familyOf(trip);
+  if (fam) {
+    const young = fam.youngest <= 3;
+    out.push({ id: 'fam', icon: 'baby', title: `Op reis met ${fam.label === 'jullie kinderen' ? 'kinderen' : 'kinderen van ' + fam.label}`, text: `De planning houdt een rustiger tempo aan, met een speelpauze en vroeg eten${young ? ', en ruimte voor een middagdutje' : ''}. Bij elke plek zie je of het leuk is voor jullie kinderen.` });
+  }
   const wet = weather.filter((w) => w.pop >= 60).length;
   const warm = weather.filter((w) => w.tmax >= 24).length;
   if (wet) out.push({ id: 'rain', icon: 'umbrella', title: wet === 1 ? 'Eén natte dag verwacht' : `${wet} natte dagen verwacht`, text: 'De slimme planning zet op die dagen musea en binnenactiviteiten. Neem een paraplu mee.' });

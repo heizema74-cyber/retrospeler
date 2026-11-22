@@ -5,7 +5,7 @@ import {
   fmt, iso, addDays, daysBetween, tripDates, distLabel, walkMin, distKm, wm, gmaps, enc,
   searchCity, tripWeather, currentWeather, weatherInfo, wikiSummary,
 } from './api.js';
-import { FEATURED, guideFor, sightsFor, placesFor, findPlace, adviceFor, CAT } from './guide.js';
+import { FEATURED, guideFor, sightsFor, placesFor, findPlace, adviceFor, CAT, partyOf, familyOf, partyLabel, kidFit } from './guide.js';
 import { makePlan, sortItems } from './planner.js';
 import { makeMap, marker, line, fit, userLocation } from './map.js';
 
@@ -73,11 +73,18 @@ function placeCard(trip, p, { compact = false } = {}) {
       <h3>${esc(p.name)}</h3>
       <p class="meta">${esc(meta)}</p>
       ${!compact && (p.short || p.text) ? `<p class="desc">${esc(p.short || p.text)}</p>` : ''}
+      ${cardFit(trip, p)}
       ${p.kind === 'food' && p.meal ? `<p class="meta small">${p.meal === 'lunch' ? 'Lunch' : p.meal === 'diner' ? 'Diner' : 'Lunch & diner'}${p.address ? ' · ' + esc(p.address) : ''}</p>` : ''}
       ${p.kind === 'hotel' && p.address ? `<p class="meta small">${p.stars ? '★'.repeat(p.stars) + ' · ' : ''}${esc(p.address)}</p>` : ''}
     </a>
     ${favBtn(trip, p)}
   </article>`;
+}
+
+function cardFit(trip, p) {
+  if (p.kind === 'food') return p.kids && familyOf(trip) ? `<p class="kidfit top">${icon('smile')} Kindvriendelijk</p>` : '';
+  const f = kidFit(p, familyOf(trip));
+  return f ? `<p class="kidfit ${f.level}">${icon(f.level === 'nee' ? 'info' : 'smile')} ${esc(f.label)}</p>` : '';
 }
 
 function skeleton(n = 4) {
@@ -217,6 +224,7 @@ async function home() {
         <div class="block-h"><h2>Must-sees</h2><a href="#/r/${trip.id}/zien">Alles ${icon('right')}</a></div>
         <div class="hscroll" id="home-sights">${skeleton(3)}</div>
       </section>
+${familyOf(trip) && g?.familyTips ? `<section class="block"><div class="block-h"><h2>Met kinderen in ${esc(trip.city.name)}</h2></div><div class="tips">${g.familyTips.map((t) => `<div class="tip fam">${icon('baby')}<div><b>${esc(t.title)}</b><p>${esc(t.text)}</p></div></div>`).join('')}</div></section>` : ''}
       ${g?.tips ? `<section class="block">
         <div class="block-h"><h2>Insider tips</h2></div>
         <div class="tips">${g.tips.slice(0, 3).map((t) => `<div class="tip">${icon('lightbulb')}<div><b>${esc(t.title)}</b><p>${esc(t.text)}</p></div></div>`).join('')}</div>
@@ -253,7 +261,9 @@ async function home() {
 
   sightsFor(trip.city).then((list) => {
     const el = $('#home-sights');
-    if (el) el.innerHTML = list.filter((s) => s.cat !== 'dagtrip').sort((a, b) => b.prio - a.prio).slice(0, 8).map((p) => miniCard(trip, p)).join('');
+    const fam = familyOf(trip);
+    const fitScore = (s) => { const f = kidFit(s, fam); return f ? (f.level === 'top' ? 3 : f.level === 'deels' ? 1 : -4) : 0; };
+    if (el) el.innerHTML = list.filter((s) => s.cat !== 'dagtrip' && s.cat !== 'spelen').sort((a, b) => (b.prio + fitScore(b)) - (a.prio + fitScore(a))).slice(0, 8).map((p) => miniCard(trip, p)).join('');
   }).catch(() => { const el = $('#home-sights'); if (el) el.innerHTML = errorBox('Bezienswaardigheden konden niet geladen worden.'); });
 }
 
@@ -303,10 +313,49 @@ function importFlow() {
   inp.click();
 }
 
+// ------------------------------------------------------------------ REISGEZELSCHAP
+const PARTY = [['stel', "Met z'n tweeën", 'couple'], ['gezin', 'Gezin', 'baby'], ['vrienden', 'Vrienden', 'friends'], ['solo', 'Alleen', 'user']];
+const ageOpt = (sel) => Array.from({ length: 18 }, (_, a) => `<option value="${a}"${a === sel ? ' selected' : ''}>${a === 0 ? 'jonger dan 1' : a + ' jaar'}</option>`).join('');
+
+// Tekent en bewaakt de keuze "wie gaan er mee"; party wordt direct aangepast.
+function partyEditor(box, party) {
+  const draw = () => {
+    const showAdults = party.type === 'gezin' || party.type === 'vrienden';
+    box.innerHTML = `
+      <div class="ptypes">${PARTY.map(([k, l, ic]) => `<button type="button" class="ptype${party.type === k ? ' on' : ''}" data-pt="${k}">${icon(ic)}<span>${l}</span></button>`).join('')}</div>
+      ${showAdults ? `<div class="prow"><span>Volwassenen</span><div class="stepper"><button type="button" data-s="-1" aria-label="Minder">${icon('minus')}</button><output>${party.adults}</output><button type="button" data-s="1" aria-label="Meer">${icon('plus')}</button></div></div>` : ''}
+      ${party.type === 'gezin' ? `<div class="kids">
+        ${party.kids.map((a, i) => `<div class="kid">${icon('smile')}<span>Kind ${i + 1}</span><select data-kid="${i}" aria-label="Leeftijd kind ${i + 1}">${ageOpt(a)}</select><button type="button" class="iconbtn sm" data-rmkid="${i}" aria-label="Verwijder kind ${i + 1}">${icon('x')}</button></div>`).join('')}
+        <button type="button" class="btn small ghost" data-addkid>${icon('plus')} Kind toevoegen</button>
+        <p class="hint">${icon('info')} Planning, tips en de plekken die we laten zien worden afgestemd op de leeftijden.</p>
+      </div>` : ''}`;
+  };
+  box.onclick = (e) => {
+    const t = e.target.closest('[data-pt]');
+    if (t) {
+      party.type = t.dataset.pt;
+      if (party.type === 'stel') party.adults = 2;
+      if (party.type === 'solo') party.adults = 1;
+      if (party.type === 'vrienden') party.adults = Math.max(3, party.adults);
+      if (party.type === 'gezin') { party.adults = Math.min(Math.max(1, party.adults), 2); if (!party.kids.length) party.kids = [4]; }
+      return draw();
+    }
+    const s = e.target.closest('[data-s]');
+    if (s) { party.adults = Math.min(12, Math.max(1, party.adults + Number(s.dataset.s))); return draw(); }
+    if (e.target.closest('[data-addkid]')) { if (party.kids.length < 8) party.kids.push(4); return draw(); }
+    const rm = e.target.closest('[data-rmkid]');
+    if (rm) { party.kids.splice(Number(rm.dataset.rmkid), 1); if (!party.kids.length) party.type = 'stel'; return draw(); }
+  };
+  box.onchange = (e) => { const k = e.target.closest('[data-kid]'); if (k) party.kids[Number(k.dataset.kid)] = Number(k.value); };
+  draw();
+}
+const partyClean = (p) => ({ type: p.type, adults: p.adults, kids: p.type === 'gezin' ? p.kids.slice() : [] });
+const partyCount = (p) => p.adults + (p.type === 'gezin' ? p.kids.length : 0);
+
 // ------------------------------------------------------------------ NIEUWE REIS
 function newTrip() {
   const start = addDays(iso(new Date()), 14);
-  const st = { city: null, start, end: addDays(start, 2), persons: 2, interests: ['cultuur', 'wandelen'], tempo: 'normaal', plan: true };
+  const st = { city: null, start, end: addDays(start, 2), party: { type: 'stel', adults: 2, kids: [] }, interests: ['cultuur', 'wandelen'], tempo: 'normaal', plan: true };
   view.innerHTML = `
   ${header('Nieuwe reis', { back: S.activeTrip() ? '#/' : '#/' })}
   <form class="form" id="nf" autocomplete="off">
@@ -331,13 +380,13 @@ function newTrip() {
       <p class="hint" id="dlen"></p>
     </section>
     <section class="fsec">
-      <span class="flabel">Met hoeveel personen?</span>
-      <div class="stepper"><button type="button" data-s="-1" aria-label="Minder">${icon('minus')}</button><output id="pers">${st.persons}</output><button type="button" data-s="1" aria-label="Meer">${icon('plus')}</button><span>personen</span></div>
+      <span class="flabel">Wie gaan er mee?</span>
+      <div class="party" id="partybox"></div>
     </section>
     <section class="fsec">
       <span class="flabel">Waar houden jullie van?</span>
       <div class="chips" id="ints">
-        ${[['cultuur', 'Cultuur & musea'], ['wandelen', 'Wandelen & grachten'], ['natuur', 'Natuur & parken'], ['kinderen', 'Met kinderen']].map(([k, l]) => `<button type="button" class="chip${st.interests.includes(k) ? ' on' : ''}" data-i="${k}">${l}</button>`).join('')}
+        ${[['cultuur', 'Cultuur & musea'], ['wandelen', 'Wandelen & grachten'], ['natuur', 'Natuur & parken']].map(([k, l]) => `<button type="button" class="chip${st.interests.includes(k) ? ' on' : ''}" data-i="${k}">${l}</button>`).join('')}
       </div>
       <span class="flabel">Tempo</span>
       <div class="seg" id="tempo">
@@ -389,7 +438,7 @@ function newTrip() {
   d1.onchange = () => { if (d2.value < d1.value) d2.value = addDays(d1.value, 2); check(); };
   d2.onchange = check;
   $('#quick').onclick = (e) => { const b = e.target.closest('[data-n]'); if (!b) return; d2.value = addDays(d1.value, b.dataset.n - 1); check(); };
-  $('.stepper').onclick = (e) => { const b = e.target.closest('[data-s]'); if (!b) return; st.persons = Math.min(20, Math.max(1, st.persons + Number(b.dataset.s))); $('#pers').textContent = st.persons; };
+  partyEditor($('#partybox'), st.party);
   $('#ints').onclick = (e) => { const b = e.target.closest('[data-i]'); if (!b) return; b.classList.toggle('on'); st.interests = $$('#ints .on').map((x) => x.dataset.i); };
   $('#tempo').onclick = (e) => { const b = e.target.closest('[data-t]'); if (!b) return; $$('#tempo button').forEach((x) => x.classList.toggle('on', x === b)); st.tempo = b.dataset.t; };
   check();
@@ -402,7 +451,7 @@ function newTrip() {
     const c = st.city;
     const trip = S.createTrip({
       city: { name: c.name, country: c.country, region: c.region, lat: c.lat, lon: c.lon, guide: c.guide || guideFor(c)?.id || null },
-      start: d1.value, end: d2.value, persons: st.persons, prefs: { interests: st.interests, tempo: st.tempo },
+      start: d1.value, end: d2.value, persons: partyCount(st.party), party: partyClean(st.party), prefs: { interests: st.interests, tempo: st.tempo },
     });
     if ($('#autoplan').checked) await buildPlan(trip).catch(() => {});
     location.hash = `#/r/${trip.id}`;
@@ -468,13 +517,14 @@ async function overview(id) {
       <p class="tagline" id="ov-tag">${esc(g?.tagline || trip.city.region || '')}</p>
       <div class="stats">
         <div>${icon('calendar')}<b>${nDays} ${nDays === 1 ? 'dag' : 'dagen'}</b><small>${fmt.range(trip.start, trip.end)}</small></div>
-        <div>${icon('users')}<b>${trip.persons} ${trip.persons === 1 ? 'persoon' : 'personen'}</b><small>${(trip.prefs?.tempo || 'normaal')} tempo</small></div>
+        <div>${icon(familyOf(trip) ? 'baby' : 'users')}<b>${esc(partyLabel(trip))}</b><small>${familyOf(trip) ? esc(familyOf(trip).label) : (trip.prefs?.tempo || 'normaal') + ' tempo'}</small></div>
         <div id="ov-wx">${icon('cloudsun')}<b>…</b><small>weer</small></div>
       </div>
       <p class="intro" id="ov-intro">${esc(g?.intro || '')}</p>
       ${g?.facts ? `<div class="facts">${g.facts.map((f) => `<div><b>${f.value}</b><small>${f.label}</small></div>`).join('')}</div>` : ''}
       <a class="btn big" href="#/r/${id}/planning">${trip.plan ? 'Bekijk reisplanning' : 'Maak reisplanning'} ${icon('right')}</a>
       <section class="block" id="ov-adv"></section>
+${familyOf(trip) && g?.familyTips ? `<section class="block"><div class="block-h"><h2>Met kinderen in ${esc(trip.city.name)}</h2></div><div class="tips">${g.familyTips.map((t) => `<div class="tip fam">${icon('baby')}<div><b>${esc(t.title)}</b><p>${esc(t.text)}</p></div></div>`).join('')}</div></section>` : ''}
       ${g?.tips ? `<section class="block"><div class="block-h"><h2>Insider tips</h2></div><div class="tips">${g.tips.map((t) => `<div class="tip">${icon('lightbulb')}<div><b>${esc(t.title)}</b><p>${esc(t.text)}</p></div></div>`).join('')}</div></section>` : ''}
       <section class="block">
         <div class="block-h"><h2>Op de kaart</h2><a href="#/r/${id}/kaart">Grote kaart ${icon('right')}</a></div>
@@ -492,7 +542,7 @@ async function overview(id) {
   }
   const map = makeMap($('#ov-map'), { lat: trip.city.lat, lon: trip.city.lon, zoom: 14, interactive: false });
   cleanup.push(() => map.remove());
-  sightsFor(trip.city).then((list) => { list.filter((s) => s.km < 5).forEach((p) => marker(map, p)); }).catch(() => {});
+  sightsFor(trip.city).then((list) => { list.filter((s) => s.km < 5 && s.cat !== 'spelen').forEach((p) => marker(map, p)); }).catch(() => {});
 
   const weather = await weatherFor(trip);
   const ws = weather.filter((w) => w.tmax != null);
@@ -517,11 +567,15 @@ const LISTS = {
 async function listPage(id, kind) {
   const trip = S.getTrip(id);
   const L = LISTS[kind];
-  let filter = L.filters[0][0];
+  const fam = familyOf(trip);
+  const filters = L.filters.slice();
+  if (fam && kind === 'sight') filters.splice(1, 0, ['kids', 'Met kinderen'], ['spelen', 'Spelen']);
+  if (kind === 'food') filters.splice(1, 0, ['kids', 'Kindvriendelijk']);
+  let filter = filters[0][0];
   let cuisine = '';
   view.innerHTML = `
   ${header(L.title, { back: `#/r/${id}`, action: `<a class="iconbtn" href="#/r/${id}/kaart?${kind}" aria-label="Op de kaart">${icon('map')}</a>`, sub: esc(trip.city.name) })}
-  <div class="chips scroll" id="flt">${L.filters.map(([k, l], i) => `<button class="chip${i === 0 ? ' on' : ''}" data-k="${k}">${l}</button>`).join('')}</div>
+  <div class="chips scroll" id="flt">${filters.map(([k, l], i) => `<button class="chip${i === 0 ? ' on' : ''}" data-k="${k}">${l}</button>`).join('')}</div>
   <div class="chips scroll" id="cuis" hidden></div>
   <div class="list" id="list">${skeleton(5)}</div>
   ${kind !== 'sight' ? `<p class="credits">${guideFor(trip.city) ? 'Selectie van Travelly. ' : 'Uit OpenStreetMap. '}Foto's, prijzen en reviews vind je via ${icon('external')} Google Maps op de detailpagina.</p>` : ''}`;
@@ -545,14 +599,17 @@ async function listPage(id, kind) {
   const draw = () => {
     let l = all.slice();
     if (kind === 'sight') {
-      if (filter === 'top') l = l.filter((s) => s.cat !== 'dagtrip').sort((a, b) => b.prio - a.prio || a.km - b.km);
-      else if (filter === 'binnen') l = l.filter((s) => s.indoor);
+      const fs = (s) => { const f = kidFit(s, fam); return f ? (f.level === 'top' ? 3 : f.level === 'deels' ? 1 : -4) : 0; };
+      if (filter === 'top') l = l.filter((s) => s.cat !== 'dagtrip' && s.cat !== 'spelen').sort((a, b) => (b.prio + fs(b)) - (a.prio + fs(a)) || a.km - b.km);
+      else if (filter === 'kids') l = l.filter((s) => s.cat !== 'dagtrip' && kidFit(s, fam)?.level !== 'nee').sort((a, b) => fs(b) - fs(a) || b.prio - a.prio);
+      else if (filter === 'binnen') l = l.filter((s) => s.indoor && s.cat !== 'spelen');
       else l = l.filter((s) => s.cat === filter);
     } else if (kind === 'hotel') {
       if (filter === 'centrum') l = l.filter((h) => h.km < 0.8).sort((a, b) => a.km - b.km);
       if (filter === 'boutique') l = l.filter((h) => /boutique|suites|design|klein/i.test(h.style + h.name));
       if (filter === 'station') l = l.filter((h) => /station/i.test(h.style + h.text) || h.km > 0.6 && h.lat > trip.city.lat + 0.004);
     } else {
+      if (filter === 'kids') l = l.filter((r) => r.kids);
       if (filter === 'lunch') l = l.filter((r) => r.meal !== 'diner');
       if (filter === 'diner') l = l.filter((r) => r.meal !== 'lunch');
       if (filter === 'dichtbij') l = l.sort((a, b) => a.km - b.km);
@@ -576,7 +633,6 @@ async function detail(id, pid) {
   if (p.kind === 'sight') {
     if (p.dur) chips.push(`${icon('clock')} ${p.dur >= 120 ? String(Math.round(p.dur / 30) / 2).replace('.', ',') + ' uur' : p.dur + ' min'}`);
     chips.push(`${icon(p.indoor ? 'museum' : 'sun')} ${p.indoor ? 'Binnen' : 'Buiten'}`);
-    if (p.kids) chips.push(`${icon('users')} Leuk met kinderen`);
   }
   if (p.kind === 'food' && p.cuisine) chips.push(`${icon('food')} ${esc(p.cuisine)}`);
   if (p.kind === 'food' && p.meal) chips.push(`${icon('clock')} ${p.meal === 'lunch' ? 'Lunch' : p.meal === 'diner' ? 'Diner' : 'Lunch & diner'}`);
@@ -608,6 +664,8 @@ async function detail(id, pid) {
       </div>
       <p class="text" id="dtext">${esc(p.text || p.short || '')}</p>
       ${p.tip ? `<div class="tip hl">${icon('lightbulb')}<div><b>Insider tip</b><p>${esc(p.tip)}</p></div></div>` : ''}
+      ${p.todo?.length ? `<section class="dotodo"><h2 class="sec-t">Wat kun je hier doen</h2><ul>${p.todo.map((t) => `<li>${icon('done')}<span>${esc(t)}</span></li>`).join('')}</ul></section>` : ''}
+      ${famBlock(trip, p)}
       ${p.closedNote || p.closed ? `<div class="note-line">${icon('info')} ${esc(p.closedNote || '')}${p.closed?.includes(1) ? ' Op maandag gesloten.' : ''} Controleer de actuele openingstijden${p.website ? ' op de website' : ''}.</div>` : ''}
       ${p.kind !== 'sight' ? `<div class="note-line">${icon('star')} Foto's, prijzen en reviews: bekijk ze in Google Maps.</div>` : ''}
       <div class="addplan">
@@ -644,6 +702,24 @@ async function detail(id, pid) {
     });
     toast(`Toegevoegd aan ${fmt.day(date)} ${fmt.short(date)}`);
   };
+}
+
+function famBlock(trip, p) {
+  const fam = familyOf(trip);
+  const f = kidFit(p, fam);
+  if (!f) return '';
+  const buggy = { ja: 'Buggy: prima', deels: 'Buggy: gaat, soms lastig', nee: 'Buggy: liever niet (trappen)' }[f.buggy] || 'Buggy: vraag bij de ingang';
+  return `<section class="famblock ${f.level}">
+    <h2 class="sec-t">${icon('baby')} Met ${fam.kids.length ? `jullie kinderen <small>(${esc(fam.label)})</small>` : 'kinderen'}</h2>
+    <div class="famchips">
+      ${fam.kids.map((a) => `<span class="${a >= f.min ? 'ok' : 'no'}">${icon(a >= f.min ? 'check' : 'x')} ${a === 0 ? 'baby' : a + ' jaar'}</span>`).join('')}
+      <span>${icon('walk')} ${buggy}</span>
+      ${f.min > 0 ? `<span>${icon('info')} Vanaf ${f.min} jaar</span>` : `<span>${icon('smile')} Alle leeftijden</span>`}
+    </div>
+    ${f.text ? `<p>${esc(f.text)}</p>` : ''}
+    ${f.level === 'deels' ? `<p class="muted">Voor de jongste is het vooral kijken: houd het bezoek kort.</p>` : ''}
+    ${f.level === 'nee' ? `<p class="muted">Misschien iets voor als ze wat ouder zijn, of als één van jullie even alleen gaat.</p>` : ''}
+  </section>`;
 }
 
 // ------------------------------------------------------------------ KAART
@@ -691,7 +767,8 @@ async function mapPage(id) {
   $('#mf').onclick = (e) => { const b = e.target.closest('[data-k]'); if (!b) return; $$('#mf .chip').forEach((x) => x.classList.toggle('on', x === b)); filter = b.dataset.k; $('#mc').hidden = true; draw(true); };
   draw(false);
   const load = async (k, fn) => { try { data[k] = await fn(); draw(filter === k || (filter === 'all' && k === 'sight')); } catch { /* bron niet bereikbaar */ } };
-  load('sight', () => sightsFor(trip.city));
+  const famMap = familyOf(trip);
+  load('sight', async () => (await sightsFor(trip.city)).filter((s) => famMap || s.cat !== 'spelen'));
   load('hotel', () => placesFor(trip.city, 'hotel'));
   load('food', () => placesFor(trip.city, 'food'));
 }
@@ -787,7 +864,7 @@ async function editItem(trip, date, itemId) {
   try {
     const [s, f] = await Promise.all([sightsFor(trip.city), placesFor(trip.city, 'food').catch(() => [])]);
     const favs = Object.values(trip.favorites || {});
-    options = [...favs.map((x) => ({ ...x, grp: 'Favorieten' })), ...s.map((x) => ({ ...x, grp: 'Bezienswaardigheden' })), ...f.map((x) => ({ ...x, grp: 'Restaurants' }))];
+    options = [...favs.map((x) => ({ ...x, grp: 'Favorieten' })), ...s.filter((x) => familyOf(trip) || x.cat !== 'spelen').map((x) => ({ ...x, grp: x.cat === 'spelen' ? 'Spelen' : 'Bezienswaardigheden' })), ...f.map((x) => ({ ...x, grp: 'Restaurants' }))];
   } catch { /* alleen vrije tekst */ }
   const groups = [...new Set(options.map((o) => o.grp))];
   sheet(`
@@ -1036,12 +1113,12 @@ function settings(id) {
       <div class="dates"><label>Aankomst<input type="date" id="s1" value="${trip.start}"></label><label>Vertrek<input type="date" id="s2" value="${trip.end}"></label></div>
     </section>
     <section class="fsec">
-      <span class="flabel">Personen</span>
-      <div class="stepper"><button type="button" data-s="-1" aria-label="Minder">${icon('minus')}</button><output id="sp">${trip.persons}</output><button type="button" data-s="1" aria-label="Meer">${icon('plus')}</button><span>personen</span></div>
+      <span class="flabel">Wie gaan er mee?</span>
+      <div class="party" id="partybox"></div>
     </section>
     <section class="fsec">
       <span class="flabel">Interesses</span>
-      <div class="chips" id="si">${[['cultuur', 'Cultuur & musea'], ['wandelen', 'Wandelen & grachten'], ['natuur', 'Natuur & parken'], ['kinderen', 'Met kinderen']].map(([k, l]) => `<button type="button" class="chip${p.interests?.includes(k) ? ' on' : ''}" data-i="${k}">${l}</button>`).join('')}</div>
+      <div class="chips" id="si">${[['cultuur', 'Cultuur & musea'], ['wandelen', 'Wandelen & grachten'], ['natuur', 'Natuur & parken']].map(([k, l]) => `<button type="button" class="chip${p.interests?.includes(k) ? ' on' : ''}" data-i="${k}">${l}</button>`).join('')}</div>
       <span class="flabel">Tempo</span>
       <div class="seg" id="st">${[['rustig', 'Rustig'], ['normaal', 'Normaal'], ['actief', 'Actief']].map(([k, l]) => `<button type="button" class="${p.tempo === k ? 'on' : ''}" data-t="${k}">${l}</button>`).join('')}</div>
     </section>
@@ -1053,8 +1130,10 @@ function settings(id) {
     <button id="del" class="danger">${icon('trash')}<span>Verwijder deze reis</span>${icon('right')}</button>
   </div>
   <p class="credits">Je reizen, notities en foto's worden alleen op dit apparaat bewaard. Wil je ze ook op je computer of telefoon? Exporteer de reis hier en importeer het bestand op het andere apparaat.</p>`;
-  let persons = trip.persons, tempo = p.tempo || 'normaal';
-  $('.stepper').onclick = (e) => { const b = e.target.closest('[data-s]'); if (!b) return; persons = Math.min(20, Math.max(1, persons + Number(b.dataset.s))); $('#sp').textContent = persons; };
+  let tempo = p.tempo || 'normaal';
+  const party = { kids: [], ...JSON.parse(JSON.stringify(partyOf(trip))) };
+  const before = JSON.stringify(partyClean(party));
+  partyEditor($('#partybox'), party);
   $('#si').onclick = (e) => { const b = e.target.closest('[data-i]'); if (b) b.classList.toggle('on'); };
   $('#st').onclick = (e) => { const b = e.target.closest('[data-t]'); if (!b) return; $$('#st button').forEach((x) => x.classList.toggle('on', x === b)); tempo = b.dataset.t; };
   $('#sf').onsubmit = (e) => {
@@ -1063,8 +1142,9 @@ function settings(id) {
     if (s2 < s1) s2 = s1;
     if (daysBetween(s1, s2) > 20) { alert('Een reis kan maximaal 21 dagen duren.'); return; }
     const datesChanged = s1 !== trip.start || s2 !== trip.end;
+    const partyChanged = JSON.stringify(partyClean(party)) !== before;
     S.updateTrip(id, (t) => {
-      t.start = s1; t.end = s2; t.persons = persons;
+      t.start = s1; t.end = s2; t.persons = partyCount(party); t.party = partyClean(party);
       t.prefs = { interests: $$('#si .on').map((x) => x.dataset.i), tempo };
       if (datesChanged && t.plan) {
         // bestaande dagen meeschuiven naar de nieuwe datums
@@ -1073,7 +1153,8 @@ function settings(id) {
       }
     });
     toast('Opgeslagen');
-    location.hash = `#/r/${id}`;
+    if (partyChanged && trip.plan && confirm('Wie er meegaat is veranderd. Zal ik de planning daarop opnieuw maken?')) buildPlan(trip).then(() => { location.hash = `#/r/${id}/planning`; }).catch(() => { location.hash = `#/r/${id}`; });
+    else location.hash = `#/r/${id}`;
   };
   $('#exp').onclick = async () => download(await S.exportTrip(trip), `travelly-${trip.city.name.toLowerCase()}-${trip.start}.json`);
   $('#imp').onclick = importFlow;

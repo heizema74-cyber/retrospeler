@@ -17,6 +17,8 @@ Travelly laat zien wat er te doen is, maakt een planning en houdt rekening met h
 | **Kaart** | Alles op de kaart, met je eigen locatie. Tik op een plek voor route of Google Maps. |
 | **Slimme planning** | Verdeelt de plekken over de dagen: wat dicht bij elkaar ligt op één dag, musea op regendagen, nooit naar een museum dat dicht is, lunch en diner in de buurt, en een dagtrip als er tijd is. Alles kun je daarna zelf aanpassen. Per dag: *Dagroute in Google Maps*. Exporteer naar je agenda (.ics). |
 | **Weer** | Echte verwachting tot ruim twee weken vooruit; verder weg het gemiddelde weer op die datums in de afgelopen drie jaar. |
+| **Wie gaan er mee?** | Kies *Met z'n tweeën*, *Gezin*, *Vrienden* of *Alleen*. Bij een gezin vul je de leeftijden van de kinderen in: je ziet dan per plek of het leuk is voor elk kind en of het met de buggy kan, er komt een filter *Met kinderen* en *Spelen* (speeltuinen, kinderboerderij, hertenkamp), en de planning past zich aan (rustiger tempo, speelpauze, middagdutje voor de kleinsten, vroeg eten op kindvriendelijke plekken). |
+| **Wat kun je hier doen** | Bij elke bezienswaardigheid een paar concrete dingen om te doen. |
 | **Notities & to-do** | Gekleurde notities en een afvinklijstje. |
 | **Dagboek** | Schrijf je herinneringen en voeg foto's toe (kiezen of direct een foto maken). |
 | **Favorieten** | Tik op het hartje en je vindt het terug, ook op de kaart. |

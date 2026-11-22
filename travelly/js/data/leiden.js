@@ -34,6 +34,13 @@ export const LEIDEN = {
     { title: 'Bekijk de stad vanaf het water', text: 'Een rondvaart of een gehuurde sloep laat je de stad zien zoals de Leidenaren hem kennen: onder lage bruggen door, langs verborgen tuinen.' },
   ],
 
+  familyTips: [
+    { title: 'Buggy of draagzak?', text: 'De binnenstad is vlak en compact, maar er zijn veel bruggetjes, smalle stoepen en hier en daar keitjes. Een lichte buggy werkt prima; voor de Burcht en de molen is een draagzak handiger.' },
+    { title: 'Regen? Naturalis!', text: 'Dino\'s, dieren en ruimte om te ontdekken: hét plan B voor een natte dag. Reserveer in vakanties een tijdslot.' },
+    { title: 'Pannenkoeken als lunch', text: 'Oudt Leyden en De Schaapsbel zitten vlak bij elkaar in het centrum; makkelijk en altijd raak met kinderen.' },
+    { title: 'Speelpauze', text: 'Bij De Put (Morspoort) staat een speeltuin met piratenschip, en in de Leidse Hout een hertenkamp met speeltuin.' },
+  ],
+
   // Seizoens- en datumadvies. Datums wisselen per jaar: controleer ze altijd even.
   events: [
     { id: 'keukenhof', from: '03-20', to: '05-10', title: 'Keukenhof is open', text: 'Bijna elk voorjaar (meestal half maart tot half mei) bloeien in Lisse miljoenen tulpen. Met de bus vanaf Leiden Centraal ben je er in ±30 minuten. Kaartjes vooraf online kopen.', icon: 'flower', sight: 'keukenhof' },
@@ -60,6 +67,8 @@ export const LEIDEN = {
       text: 'Statige grachtenpanden, bruggen en eeuwenoude bomen: de Rapenburg wordt vaak de mooiste gracht van Nederland genoemd. Langs het water liggen het Academiegebouw, het Rijksmuseum van Oudheden en de ingang van de Hortus.',
       tip: 'Kom vroeg in de ochtend voor rust en het mooiste licht.',
       photos: PHOTOS.rapenburg, wiki: ['nl', 'Rapenburg (Leiden)'],
+      todo: ["Wandel van Hotel De Doelen naar de Hortus", "Zoek de sjiekste gevel (en het Descartes-gedenkteken)", "Kijk vanaf een brug naar de voorbijvarende bootjes"],
+      fam: {min: 0, buggy: "ja", text: "Bootjes en eendjes kijken. Vlakke stoepen, prima met de buggy. Let op: er staan geen hekken langs het water."},
     },
     {
       id: 'hortus', name: 'Hortus botanicus', cat: 'natuur', indoor: false, dur: 90, prio: 5,
@@ -68,7 +77,9 @@ export const LEIDEN = {
       text: 'Sinds 1590 groeien hier planten uit de hele wereld. Loop door de historische kassen met de reuzenwaterlelie, de Japanse tuin van Von Siebold en de Clusiustuin, waar de eerste tulpen van Nederland bloeiden.',
       tip: 'In april en mei staat de Clusiustuin vol historische tulpen.',
       closedNote: 'Van november t/m maart op maandag gesloten.',
-      website: 'https://www.hortusleiden.nl', photos: PHOTOS.hortus, wiki: ['nl', 'Hortus botanicus Leiden'], kids: true,
+      website: 'https://www.hortusleiden.nl', photos: PHOTOS.hortus, wiki: ['nl', 'Hortus botanicus Leiden'],
+      todo: ["Bewonder de reuzenwaterlelie in de warme kas", "Wandel door de Japanse tuin van Von Siebold", "Zoek de historische tulpen in de Clusiustuin"],
+      fam: {min: 0, buggy: "ja", text: "De warme kassen met reuzenbladeren en het water zijn een avontuur voor kleine kinderen. De meeste paden zijn goed te doen met een buggy."},
     },
     {
       id: 'burcht', name: 'De Burcht', cat: 'historisch', indoor: false, dur: 40, prio: 5,
@@ -76,7 +87,9 @@ export const LEIDEN = {
       short: 'Middeleeuwse burcht met uitzicht',
       text: 'Een ronde burcht op een kunstmatige heuvel, ruim negenhonderd jaar oud. Loop over de weergang en kijk uit over de rode daken, torens en grachten. Gratis en elke dag te bezoeken.',
       tip: 'Op z\'n mooist bij zonsondergang. Daarna een drankje op het terras aan de voet.',
-      photos: PHOTOS.burcht, wiki: ['nl', 'Burcht van Leiden'], kids: true,
+      photos: PHOTOS.burcht, wiki: ['nl', 'Burcht van Leiden'],
+      todo: ["Loop de hele weergang rond", "Tel hoeveel kerktorens je ziet", "Drink iets op het terras aan de voet van de heuvel"],
+      fam: {min: 3, buggy: "nee", text: "Een echt kasteel met een muur om op te lopen: spannend! Er zijn trappen, dus laat de buggy beneden en houd de kleinste aan de hand."},
     },
     {
       id: 'lakenhal', name: 'Museum De Lakenhal', cat: 'museum', indoor: true, dur: 120, prio: 5,
@@ -85,6 +98,8 @@ export const LEIDEN = {
       text: 'Het stedelijk museum in de voormalige hal van de lakenindustrie. Ontdek vroeg werk van Rembrandt, het beroemde Laatste Oordeel van Lucas van Leyden en het verhaal van de stad, van textiel tot het beleg van 1574.',
       tip: 'Neem de tijd voor de lichte nieuwe vleugel en de museumtuin.',
       closed: [MA], website: 'https://www.lakenhal.nl', photos: PHOTOS.lakenhal, wiki: ['nl', 'Museum De Lakenhal'],
+      todo: ["Bekijk vroeg werk van de jonge Rembrandt", "Sta stil bij Het Laatste Oordeel van Lucas van Leyden", "Ontdek het verhaal van het beleg en ontzet van 1574"],
+      fam: {min: 5, buggy: null, text: "Vraag bij de balie wat er voor kinderen is. Met kleine kinderen: kies een paar zalen en houd het kort."},
     },
     {
       id: 'rmo', name: 'Rijksmuseum van Oudheden', cat: 'museum', indoor: true, dur: 120, prio: 4,
@@ -92,7 +107,9 @@ export const LEIDEN = {
       short: 'Een echte Egyptische tempel',
       text: 'Het nationale archeologiemuseum. In de centrale hal staat de Tempel van Taffeh, een complete Egyptische tempel. Daarnaast mummies, Grieken, Romeinen en de vroegste geschiedenis van Nederland.',
       tip: 'Super met kinderen: de mummiezaal is favoriet.',
-      closed: [MA], website: 'https://www.rmo.nl', photos: PHOTOS.rmo, wiki: ['nl', 'Rijksmuseum van Oudheden'], kids: true,
+      closed: [MA], website: 'https://www.rmo.nl', photos: PHOTOS.rmo, wiki: ['nl', 'Rijksmuseum van Oudheden'],
+      todo: ["Loop door de Egyptische Tempel van Taffeh", "Bekijk de mummies en sarcofagen", "Ontdek wat de Romeinen in Nederland achterlieten"],
+      fam: {min: 4, buggy: null, text: "Mummies en een echte tempel: vanaf een jaar of 4 vaak een groot succes. Voor peuters vooral kijken."},
     },
     {
       id: 'boerhaave', name: 'Rijksmuseum Boerhaave', cat: 'museum', indoor: true, dur: 90, prio: 4,
@@ -101,6 +118,8 @@ export const LEIDEN = {
       text: 'Het museum van de geschiedenis van wetenschap en geneeskunde, in een voormalig klooster. Zie de microscopen van Van Leeuwenhoek, het anatomisch theater en de slingeruurwerken van Huygens.',
       tip: 'Het nagebouwde anatomisch theater is een echte blikvanger.',
       closed: [MA], website: 'https://rijksmuseumboerhaave.nl', photos: PHOTOS.boerhaave, wiki: ['nl', 'Rijksmuseum Boerhaave'],
+      todo: ["Kijk door de microscopen van Van Leeuwenhoek", "Neem plaats in het anatomisch theater", "Bekijk de slingeruurwerken van Huygens"],
+      fam: {min: 7, buggy: null, text: "Vooral interessant voor wat oudere kinderen. Voor peuters is er weinig te doen."},
     },
     {
       id: 'naturalis', name: 'Naturalis', cat: 'museum', indoor: true, dur: 150, prio: 4,
@@ -108,7 +127,9 @@ export const LEIDEN = {
       short: 'T. rex Trix en 42 miljoen objecten',
       text: 'Het nationale natuurhistorisch museum, in een spectaculair gebouw. Sta oog in oog met T. rex Trix, ontdek de dinozaal, de ijstijd en de vroege mens. Ideaal voor een regenachtige dag.',
       tip: 'Reserveer een tijdslot online; in vakanties is het druk.',
-      website: 'https://www.naturalis.nl', photos: PHOTOS.naturalis, wiki: ['nl', 'Naturalis Biodiversity Center'], kids: true,
+      website: 'https://www.naturalis.nl', photos: PHOTOS.naturalis, wiki: ['nl', 'Naturalis Biodiversity Center'],
+      todo: ["Sta oog in oog met T. rex Trix", "Loop door de dinozaal en de ijstijd", "Ontdek dieren van over de hele wereld"],
+      fam: {min: 2, buggy: null, text: "Hét uitje met kinderen: dino's, dieren en veel te ontdekken. Het is groot: plan een pauze en ga niet alles zien."},
     },
     {
       id: 'pieterskerk', name: 'Pieterskerk', cat: 'historisch', indoor: true, dur: 45, prio: 4,
@@ -117,6 +138,8 @@ export const LEIDEN = {
       text: 'De oudste en grootste kerk van Leiden, nu een monument en evenementenlocatie. Hier liggen de schilder Jan Steen en de geleerde Boerhaave begraven, en de Pilgrim Fathers kerkten in de buurt.',
       tip: 'Loop daarna door de stille Pieterskerkhof en de Kloksteeg.',
       website: 'https://www.pieterskerk.com', photos: PHOTOS.pieterskerk, wiki: ['nl', 'Pieterskerk (Leiden)'],
+      todo: ["Zoek het graf van schilder Jan Steen", "Kijk omhoog naar de enorme gotische gewelven", "Wandel daarna door de stille Kloksteeg"],
+      fam: {min: 6, buggy: "ja", text: "Mooi gebouw, maar weinig voor kleine kinderen: kort binnenlopen is genoeg."},
     },
     {
       id: 'devalk', name: 'Molen De Valk', cat: 'historisch', indoor: true, dur: 60, prio: 3,
@@ -125,6 +148,8 @@ export const LEIDEN = {
       text: 'Een hoge stellingmolen uit 1743 aan de singel, tegenwoordig een museum. Klim naar de stelling en zie hoe het leven van een molenaarsfamilie eruitzag. Rembrandt was de zoon van een Leidse molenaar.',
       tip: 'Mooi te combineren met Museum De Lakenhal en het Singelpark.',
       closed: [MA], website: 'https://molenmuseumdevalk.nl', photos: PHOTOS.devalk, wiki: ['nl', 'De Valk (Leiden)'],
+      todo: ["Klim naar de stelling en kijk uit over de stad", "Zie hoe een molenaarsfamilie leefde", "Bekijk de wieken van dichtbij"],
+      fam: {min: 4, buggy: "nee", text: "Een echte molen van binnen! De trappen zijn steil en de stelling is hoog: niet voor de allerkleinsten."},
     },
     {
       id: 'siebold', name: 'Japanmuseum SieboldHuis', cat: 'museum', indoor: true, dur: 75, prio: 3,
@@ -133,6 +158,8 @@ export const LEIDEN = {
       text: 'Het huis van Philipp Franz von Siebold, de arts die in de 19e eeuw Japan in kaart bracht. Prachtige collectie Japanse kunst, voorwerpen en planten in een historisch pand aan de Rapenburg.',
       tip: 'Combineer met de Japanse tuin in de Hortus.',
       closed: [MA], website: 'https://www.sieboldhuis.org', photos: PHOTOS.siebold, wiki: ['nl', 'Japanmuseum SieboldHuis'],
+      todo: ["Bekijk Japanse kunst en voorwerpen uit de 19e eeuw", "Zie hoe Von Siebold Japan in kaart bracht", "Combineer met de Japanse tuin in de Hortus"],
+      fam: {min: 6, buggy: null, text: "Rustig museum; voor jonge kinderen kort houden."},
     },
     {
       id: 'wereldmuseum', name: 'Wereldmuseum Leiden', cat: 'museum', indoor: true, dur: 90, prio: 3,
@@ -140,6 +167,8 @@ export const LEIDEN = {
       short: 'Culturen van de hele wereld',
       text: 'Een van de oudste volkenkundige musea ter wereld. Reis van Japan en Indonesië naar Afrika en de Amerika\'s, met indrukwekkende beelden, maskers en textiel.',
       closed: [MA], website: 'https://leiden.wereldmuseum.nl', photos: PHOTOS.wereldmuseum, wiki: ['nl', 'Wereldmuseum Leiden'],
+      todo: ["Bekijk maskers en beelden uit de hele wereld", "Reis van Japan en Indonesië naar Afrika", "Ontdek textiel en sieraden van andere culturen"],
+      fam: {min: 4, buggy: null, text: "Maskers en grote beelden spreken kinderen aan. Kies samen een paar zalen."},
     },
     {
       id: 'muurgedichten', name: 'Muurgedichtenroute', cat: 'wandelen', indoor: false, dur: 75, prio: 4,
@@ -148,6 +177,8 @@ export const LEIDEN = {
       text: 'Sinds 1992 zijn in Leiden meer dan honderd gedichten op muren geschilderd, in tientallen talen, van Shakespeare en Lorca tot Marsman. Een wandeling langs de gedichten brengt je vanzelf in de mooiste straatjes.',
       tip: 'Begin bij de Rapenburg en zigzag door de steegjes richting Nieuwe Rijn.',
       photos: PHOTOS.muurgedichten, wiki: ['en', 'Wall poems in Leiden'],
+      todo: ["Speur naar gedichten in tientallen talen", "Zoek het gedicht van Shakespeare", "Laat je meevoeren door de mooiste steegjes"],
+      fam: {min: 5, buggy: "ja", text: "Maak er een speurtocht van: wie ziet het eerst het volgende gedicht op een muur?"},
     },
     {
       id: 'hofjes', name: 'Hofjeswandeling', cat: 'wandelen', indoor: false, dur: 75, prio: 3,
@@ -156,6 +187,8 @@ export const LEIDEN = {
       text: 'Leiden telt zo\'n 35 hofjes: rustige binnentuinen met kleine huisjes, oorspronkelijk gesticht voor ouderen en alleenstaanden. Veel hofjes zijn overdag vrij toegankelijk, zolang je de rust respecteert.',
       tip: 'Het Sint Annahofje heeft een middeleeuwse kapel met origineel interieur.',
       photos: PHOTOS.hofjes, wiki: ['nl', 'Sint Annahofje'],
+      todo: ["Stap binnen in een stille binnentuin", "Bekijk de middeleeuwse kapel van het Sint Annahofje", "Ontdek hoe hier vroeger werd gewoond"],
+      fam: {min: 0, buggy: "deels", text: "Het zijn woonhofjes: houd het rustig en kort. Met een slapende peuter in de buggy juist heerlijk."},
     },
     {
       id: 'rondvaart', name: 'Rondvaart door de grachten', cat: 'wandelen', indoor: false, dur: 60, prio: 4,
@@ -164,6 +197,8 @@ export const LEIDEN = {
       text: 'Vaar onder lage bruggen door langs de singels en grachten. De schipper vertelt over het beleg, de Gouden Eeuw en wie er achter de gevels woonde. Of huur zelf een elektrische sloep.',
       tip: 'Bij zonnig weer: neem een middagboot en sluit af op een terras.',
       photos: PHOTOS.city.slice(0, 1), wiki: null,
+      todo: ["Vaar onder lage bruggetjes door", "Hoor verhalen over het beleg en de Gouden Eeuw", "Kijk in verborgen tuinen langs het water"],
+      fam: {min: 0, buggy: "deels", text: "Kinderen vinden varen geweldig. Vraag bij het boeken of de buggy (ingeklapt) mee kan."},
     },
     {
       id: 'gravensteen', name: 'Gravensteen', cat: 'historisch', indoor: false, dur: 25, prio: 2,
@@ -171,6 +206,8 @@ export const LEIDEN = {
       short: 'Voormalige gevangenis',
       text: 'Het oude gravelijke gevangenis- en rechtsgebouw naast de Pieterskerk, nu in gebruik bij de universiteit. Prachtige gevels uit verschillende eeuwen.',
       photos: PHOTOS.gravensteen, wiki: ['nl', 'Gravensteen (Leiden)'],
+      todo: ["Bekijk de gevels uit verschillende eeuwen", "Loop door naar de Pieterskerk", "Lees over de oude rechtspraak"],
+      fam: {min: 8, buggy: "ja", text: "Vooral van buiten te bekijken; snel gezien."},
     },
     {
       id: 'academiegebouw', name: 'Academiegebouw', cat: 'historisch', indoor: false, dur: 30, prio: 3,
@@ -179,6 +216,8 @@ export const LEIDEN = {
       text: 'Sinds 1581 het hart van de Universiteit Leiden, in een voormalige kloosterkapel. Hier promoveren studenten nog altijd. Beroemd is het Zweetkamertje, met duizenden handtekeningen op de muren.',
       tip: 'Het Zweetkamertje is beperkt te bezoeken; vraag ernaar bij de ingang.',
       photos: PHOTOS.academiegebouw, wiki: ['nl', 'Academiegebouw (Leiden)'],
+      todo: ["Bekijk het hart van de oudste universiteit", "Vraag naar het Zweetkamertje met handtekeningen", "Loop door naar de Hortus ernaast"],
+      fam: {min: 8, buggy: "ja", text: "Voor kinderen snel gezien; combineer met de Hortus ernaast."},
     },
     {
       id: 'hooglandse', name: 'Hooglandse Kerk', cat: 'historisch', indoor: true, dur: 40, prio: 2,
@@ -187,6 +226,8 @@ export const LEIDEN = {
       text: 'Een indrukwekkende laatgotische kerk vlak bij de Burcht, gewijd aan Sint Pancras. Het interieur is licht en ruim; buiten ligt een sfeervol pleintje.',
       closedNote: 'Beperkt open (vooral in de zomer).',
       photos: PHOTOS.hooglandse, wiki: ['nl', 'Hooglandse Kerk'],
+      todo: ["Bekijk het lichte laatgotische interieur", "Zit even op het pleintje voor de kerk", "Loop door naar de Burcht vlakbij"],
+      fam: {min: 6, buggy: "ja", text: "Kort binnenlopen; de Burcht om de hoek is leuker voor kinderen."},
     },
     {
       id: 'pilgrim', name: 'Leiden American Pilgrim Museum', cat: 'museum', indoor: true, dur: 45, prio: 2,
@@ -195,6 +236,8 @@ export const LEIDEN = {
       text: 'In een van de oudste huizen van Leiden (14e eeuw) vertelt dit kleine museum over de Pilgrim Fathers, die in Leiden woonden voordat ze in 1620 met de Mayflower naar Amerika vertrokken.',
       closedNote: 'Beperkte openingstijden.',
       photos: PHOTOS.pilgrim, wiki: ['en', 'Pilgrim Museum Leiden'],
+      todo: ["Stap binnen in een huis uit de 14e eeuw", "Hoor het verhaal van de Mayflower", "Bekijk voorwerpen uit het dagelijks leven van toen"],
+      fam: {min: 8, buggy: "nee", text: "Klein museum met kostbare spullen: minder geschikt voor jonge kinderen."},
     },
     {
       id: 'morspoort', name: 'Morspoort', cat: 'historisch', indoor: false, dur: 20, prio: 2,
@@ -202,6 +245,8 @@ export const LEIDEN = {
       short: 'Een van de twee overgebleven stadspoorten',
       text: 'Een fotogenieke stadspoort uit 1669 met ophaalbrug, aan de westkant van de binnenstad. Samen met de Zijlpoort is dit het enige dat nog over is van de vroegere stadsomwalling.',
       photos: PHOTOS.morspoort, wiki: ['nl', 'Morspoort'],
+      todo: ["Maak een foto van de poort met ophaalbrug", "Wandel verder door het Singelpark", "Kijk of de brug net open gaat voor een boot"],
+      fam: {min: 0, buggy: "ja", text: "Vlak bij De Put staat een speeltuin met piratenschip: mooi te combineren."},
     },
     {
       id: 'zijlpoort', name: 'Zijlpoort', cat: 'historisch', indoor: false, dur: 20, prio: 2,
@@ -209,6 +254,8 @@ export const LEIDEN = {
       short: 'Stadspoort aan de Zijlsingel',
       text: 'De tweede overgebleven stadspoort, aan het water van de Zijlsingel. Een mooi eindpunt van een wandeling door het Singelpark.',
       photos: PHOTOS.zijlpoort, wiki: ['nl', 'Zijlpoort (Leiden)'],
+      todo: ["Bekijk de stadspoort aan het water", "Loop een stuk over de singel", "Drink iets bij de brasserie ernaast"],
+      fam: {min: 0, buggy: "ja", text: "Rustige plek aan het water, prima met de buggy."},
     },
     {
       id: 'singelpark', name: 'Singelpark', cat: 'natuur', indoor: false, dur: 90, prio: 3,
@@ -216,7 +263,9 @@ export const LEIDEN = {
       short: 'Groene ring om de binnenstad',
       text: 'Een wandelpark van ruim zes kilometer langs de oude stadssingels, met bruggen, tuinen, de Plantage en De Put. Perfect om de stad van de groene kant te zien.',
       tip: 'Loop een deel: van Molen De Valk via de Morspoort naar het Rapenburg.',
-      photos: PHOTOS.singelpark, wiki: ['nl', 'Singelpark'], kids: true,
+      photos: PHOTOS.singelpark, wiki: ['nl', 'Singelpark'],
+      todo: ["Wandel een stuk van de groene ring om de stad", "Steek de nieuwe bruggetjes over", "Picknick in park De Put of de Plantage"],
+      fam: {min: 0, buggy: "ja", text: "Ruimte om te rennen, bruggetjes en eenden voeren. Bij De Put staat een speeltuin met piratenschip."},
     },
     {
       id: 'sterrewacht', name: 'Oude Sterrewacht', cat: 'historisch', indoor: true, dur: 60, prio: 2,
@@ -225,13 +274,17 @@ export const LEIDEN = {
       text: 'De oudste nog bestaande universiteitssterrenwacht ter wereld, naast de Hortus. Op gezette tijden zijn er rondleidingen en publieksavonden waarbij je door de historische telescopen kijkt.',
       closedNote: 'Alleen tijdens rondleidingen en publieksavonden.',
       photos: PHOTOS.sterrewacht, wiki: ['nl', 'Sterrewacht Leiden'],
+      todo: ["Kijk door een historische telescoop", "Hoor over 400 jaar sterrenkunde in Leiden", "Combineer met de Hortus ernaast"],
+      fam: {min: 8, buggy: null, text: "Rondleidingen zijn vooral voor oudere kinderen en volwassenen."},
     },
     {
       id: 'leidsehout', name: 'Leidse Hout', cat: 'natuur', indoor: false, dur: 75, prio: 2,
       lat: 52.17528, lon: 4.48111, address: 'Leidse Hout, Leiden',
       short: 'Stadspark met theehuis',
       text: 'Een landschapspark aan de noordkant van de stad met vijvers, een hertenkamp, speeltuin en een theehuis. Fijn voor een rustige ochtend of een picknick.',
-      photos: PHOTOS.leidsehout, wiki: ['nl', 'Leidse Hout'], kids: true,
+      photos: PHOTOS.leidsehout, wiki: ['nl', 'Leidse Hout'],
+      todo: ["Bezoek het hertenkamp", "Speel in de speeltuin", "Drink iets in het theehuis aan de vijver"],
+      fam: {min: 0, buggy: "ja", text: "Hertenkamp, speeltuin en een theehuis: een perfecte ochtend met kleine kinderen."},
     },
     {
       id: 'oudpoelgeest', name: 'Kasteel Oud-Poelgeest', cat: 'natuur', indoor: false, dur: 60, prio: 2,
@@ -239,6 +292,8 @@ export const LEIDEN = {
       short: 'Kasteel met Engelse landschapstuin',
       text: 'Net buiten Leiden ligt dit kasteel in een prachtig park, met de vijver, oude bomen en slingerende paden. Herman Boerhaave woonde er ooit. Combineer met de Leidse Hout.',
       photos: PHOTOS.oudpoelgeest, wiki: ['nl', 'Kasteel Oud-Poelgeest'],
+      todo: ["Wandel door de Engelse landschapstuin", "Bekijk het kasteel vanaf de vijver", "Combineer met de Leidse Hout"],
+      fam: {min: 0, buggy: "ja", text: "Mooie wandeling met de buggy door het park; ruimte om te rennen."},
     },
     {
       id: 'keukenhof', name: 'Keukenhof', cat: 'dagtrip', indoor: false, dur: 300, prio: 5,
@@ -246,15 +301,26 @@ export const LEIDEN = {
       short: 'De beroemdste bloementuin ter wereld',
       text: 'Ruim 30 hectare vol tulpen, narcissen en hyacinten, met paviljoens en de bollenvelden er direct omheen. Alleen in het voorjaar open. Vanaf Leiden Centraal rijdt er in het seizoen een directe bus.',
       tip: 'Kom vroeg (bij opening) of na 16 uur voor minder drukte.',
-      season: [3, 4, 5], website: 'https://keukenhof.nl', photos: PHOTOS.keukenhof, wiki: ['nl', 'Keukenhof'], kids: true,
+      season: [3, 4, 5], website: 'https://keukenhof.nl', photos: PHOTOS.keukenhof, wiki: ['nl', 'Keukenhof'],
+      todo: ["Dwaal door miljoenen bloeiende bollen", "Bekijk de bloemenshows in de paviljoens", "Fiets of wandel langs de bollenvelden eromheen"],
+      fam: {min: 0, buggy: "ja", text: "Brede paden, prima met de buggy. Er is ook iets voor kinderen te doen in het park, zoals een speeltuin: kijk op de website wat er dit jaar is."},
     },
     {
       id: 'katwijk', name: 'Strand van Katwijk', cat: 'dagtrip', indoor: false, dur: 240, prio: 2,
       lat: 52.20306, lon: 4.39528, address: 'Boulevard, Katwijk aan Zee',
       short: 'Duinen en zee op 20 minuten',
       text: 'Een witte vuurtoren, een brede boulevard en de duinen van Berkheide. Met de bus of fiets ben je er zo vanuit Leiden: heerlijk op een zonnige dag.',
-      season: [5, 6, 7, 8, 9], photos: PHOTOS.katwijk, wiki: ['nl', 'Katwijk aan Zee'], kids: true,
+      season: [5, 6, 7, 8, 9], photos: PHOTOS.katwijk, wiki: ['nl', 'Katwijk aan Zee'],
+      todo: ["Bouw zandkastelen op het brede strand", "Wandel over de boulevard naar de witte vuurtoren", "Eet vis aan zee"],
+      fam: {min: 0, buggy: "deels", text: "Zandkastelen bouwen! Over het zand rijdt een buggy lastig: een draagzak is handig."},
     },
+    // ---- Spelen (alleen in beeld bij reizen met kinderen) ----
+    { id: 'p-piraat', name: 'Speeltuin met piratenschip', cat: 'spelen', indoor: false, dur: 45, prio: 2, family: true, lat: 52.16170, lon: 4.48220, address: 'Park De Put, Leiden', short: 'Klimmen op een piratenschip', text: 'Een speeltuin met een groot piratenschip, bij de Morspoort en het Singelpark. Ideaal voor een speelpauze tussen het sightseeën door.', todo: ['Klim op het piratenschip', 'Kijk naar de Morspoort aan de overkant', 'Wandel daarna verder door het Singelpark'], fam: { min: 1, buggy: 'ja', text: 'Gratis en centraal: perfect voor een pauze.' }, photos: [] },
+    { id: 'p-hertenkamp', name: 'Hertenkamp Leidse Hout', cat: 'spelen', indoor: false, dur: 60, prio: 2, family: true, lat: 52.17495, lon: 4.48182, address: 'Leidse Hout, Leiden', short: 'Herten kijken in het park', text: 'In het stadspark Leidse Hout kun je herten bekijken. Combineer met de speeltuin en het theehuis in het park.', todo: ['Bekijk de herten', 'Speel in de speeltuin in het park', 'Drink iets in het theehuis'], fam: { min: 0, buggy: 'ja', text: 'Heerlijk voor peuters en kleuters; vlakke paden.' }, photos: [] },
+    { id: 'p-coebel', name: 'Kinderboerderij Coebel', cat: 'spelen', indoor: false, dur: 60, prio: 2, family: true, lat: 52.15106, lon: 4.47107, address: 'Leiden', short: 'Dieren aaien', text: 'Een kinderboerderij aan de westkant van Leiden, waar kinderen dieren van dichtbij kunnen zien.', todo: ['Bekijk en aai de dieren', 'Kijk of je mag helpen voeren', 'Speel buiten'], fam: { min: 0, buggy: 'ja', text: 'Leuk voor de allerkleinsten. Controleer de openingstijden.' }, photos: [] },
+    { id: 'p-noorder', name: 'Speeltuin Noorderkwartier', cat: 'spelen', indoor: false, dur: 45, prio: 1, family: true, lat: 52.16667, lon: 4.49985, address: 'Noorderkwartier, Leiden', short: 'Buurtspeeltuin', text: 'Een speeltuin van een Leidse speeltuinvereniging. Bij zulke speeltuinen betaal je soms een kleine entree.', todo: ['Schommelen, glijden en klimmen'], fam: { min: 1, buggy: 'ja', text: 'Omheinde buurtspeeltuin.' }, photos: [] },
+    { id: 'p-zuider', name: 'Speeltuin Zuiderkwartier', cat: 'spelen', indoor: false, dur: 45, prio: 1, family: true, lat: 52.14892, lon: 4.49215, address: 'Zuiderkwartier, Leiden', short: 'Buurtspeeltuin', text: 'Een speeltuin van een Leidse speeltuinvereniging. Bij zulke speeltuinen betaal je soms een kleine entree.', todo: ['Schommelen, glijden en klimmen'], fam: { min: 1, buggy: 'ja', text: 'Omheinde buurtspeeltuin.' }, photos: [] },
+    { id: 'p-wester', name: 'Speeltuin Westerkwartier', cat: 'spelen', indoor: false, dur: 45, prio: 1, family: true, lat: 52.15596, lon: 4.47538, address: 'Westerkwartier, Leiden', short: 'Buurtspeeltuin', text: 'Een speeltuin van een Leidse speeltuinvereniging. Bij zulke speeltuinen betaal je soms een kleine entree.', todo: ['Schommelen, glijden en klimmen'], fam: { min: 1, buggy: 'ja', text: 'Omheinde buurtspeeltuin.' }, website: 'https://speeltuinwesterkwartier.nl/', photos: [] },
   ],
 
   hotels: [
@@ -280,11 +346,11 @@ export const LEIDEN = {
     { id: 'r-doofpot', name: 'In den Doofpot', lat: 52.16196, lon: 4.48582, address: 'Turfmarkt 9', cuisine: 'Fine dining', meal: 'diner', text: 'Verfijnde keuken aan het water van de Turfmarkt. Voor een bijzondere avond.' },
     { id: 'r-prentenkabinet', name: 'Het Prentenkabinet', lat: 52.15725, lon: 4.48764, address: 'Kloksteeg 25', cuisine: 'Fine dining', meal: 'diner', text: 'Elegant restaurant in een historisch pand vlak bij de Pieterskerk, met een tuin.' },
     { id: 'r-annies', name: "Annie's", lat: 52.15948, lon: 4.49123, address: 'Hoogstraat 1A', cuisine: 'Café-restaurant', meal: 'beide', text: 'Legendarisch terras op vlonders op het water, bij de samenloop van Oude en Nieuwe Rijn.' },
-    { id: 'r-cityhall', name: 'City Hall', lat: 52.15793, lon: 4.49103, address: 'Stadhuisplein 3', cuisine: 'Brasserie', meal: 'beide', text: 'Brasserie in het monumentale stadhuis, met een terras aan het water.' },
-    { id: 'r-oudtleyden', name: 'Oudt Leyden', lat: 52.16223, lon: 4.48457, address: 'Steenstraat 49', cuisine: 'Pannenkoeken', meal: 'lunch', text: 'Klassiek pannenkoekenhuis in Oudhollandse stijl. Perfect voor lunch of met kinderen.' },
-    { id: 'r-schaapsbel', name: 'Pannenkoekenhuis De Schaapsbel', lat: 52.16286, lon: 4.48525, address: 'Beestenmarkt 7', cuisine: 'Pannenkoeken', meal: 'lunch', text: 'Pannenkoeken en Hollandse kost aan de Beestenmarkt.' },
-    { id: 'r-vanderwerff', name: 'Stadscafé Van der Werff', lat: 52.16385, lon: 4.48478, address: 'Steenstraat 2', cuisine: 'Grand café', meal: 'beide', text: 'Ruim grand café met terras op de hoek van de Steenstraat; prima voor lunch of een borrel.' },
-    { id: 'r-pakhuis', name: 'Grand Café Pakhuis', lat: 52.15787, lon: 4.48429, address: 'Doelensteeg 8', cuisine: 'Hollands', meal: 'beide', text: 'Grand café in een oud pakhuis vlak bij de Hortus en het Rapenburg.' },
+    { id: 'r-cityhall', name: 'City Hall', lat: 52.15793, lon: 4.49103, address: 'Stadhuisplein 3', cuisine: 'Brasserie', meal: 'beide', text: 'Brasserie in het monumentale stadhuis, met een terras aan het water.', kids: true },
+    { id: 'r-oudtleyden', name: 'Oudt Leyden', lat: 52.16223, lon: 4.48457, address: 'Steenstraat 49', cuisine: 'Pannenkoeken', meal: 'lunch', text: 'Klassiek pannenkoekenhuis in Oudhollandse stijl. Perfect voor lunch of met kinderen.', kids: true },
+    { id: 'r-schaapsbel', name: 'Pannenkoekenhuis De Schaapsbel', lat: 52.16286, lon: 4.48525, address: 'Beestenmarkt 7', cuisine: 'Pannenkoeken', meal: 'lunch', text: 'Pannenkoeken en Hollandse kost aan de Beestenmarkt.', kids: true },
+    { id: 'r-vanderwerff', name: 'Stadscafé Van der Werff', lat: 52.16385, lon: 4.48478, address: 'Steenstraat 2', cuisine: 'Grand café', meal: 'beide', text: 'Ruim grand café met terras op de hoek van de Steenstraat; prima voor lunch of een borrel.', kids: true },
+    { id: 'r-pakhuis', name: 'Grand Café Pakhuis', lat: 52.15787, lon: 4.48429, address: 'Doelensteeg 8', cuisine: 'Hollands', meal: 'beide', text: 'Grand café in een oud pakhuis vlak bij de Hortus en het Rapenburg.', kids: true },
     { id: 'r-beleg', name: 'Leidsch Beleg', lat: 52.16183, lon: 4.48576, address: 'Turfmarkt 12', cuisine: 'Hollands', meal: 'beide', text: 'Hollandse en regionale gerechten aan de Turfmarkt.' },
     { id: 'r-bordo', name: "Bistro Bord'o", lat: 52.16123, lon: 4.48563, address: 'Apothekersdijk 2-3', cuisine: 'Frans', meal: 'diner', text: 'Franse bistro aan de gracht.' },
     { id: 'r-puur', name: 'Puur', lat: 52.15815, lon: 4.48916, address: 'Pieterskerk-Choorsteeg', cuisine: 'Modern', meal: 'diner', text: 'Restaurant in een steegje achter de Pieterskerk.' },
@@ -299,7 +365,7 @@ export const LEIDEN = {
     { id: 'r-djebena', name: 'Djebena', lat: 52.16010, lon: 4.48284, address: 'Noordeinde 21', cuisine: 'Ethiopisch', meal: 'diner', text: 'Oost-Afrikaanse gerechten om te delen, gegeten met injera.' },
     { id: 'r-korijin', name: 'K•Ori•Jin', lat: 52.15652, lon: 4.49347, address: 'Gangetje 6', cuisine: 'Koreaans', meal: 'diner', text: 'Koreaanse keuken in een smal straatje bij de Burcht.' },
     { id: 'r-rodos', name: 'Rodos Good Taste', lat: 52.16223, lon: 4.48592, address: 'Turfmarkt 5', cuisine: 'Grieks', meal: 'diner', text: 'Grieks restaurant aan de Turfmarkt.' },
-    { id: 'r-bootjes', name: 'Bootjes en Broodjes', lat: 52.16195, lon: 4.48412, address: 'Morsstraat 9', cuisine: 'Lunchroom', meal: 'lunch', text: 'Broodjes en lunch, vlak bij de Morspoort.' },
+    { id: 'r-bootjes', name: 'Bootjes en Broodjes', lat: 52.16195, lon: 4.48412, address: 'Morsstraat 9', cuisine: 'Lunchroom', meal: 'lunch', text: 'Broodjes en lunch, vlak bij de Morspoort.', kids: true },
     { id: 'r-justmeet', name: 'Just Meet', lat: 52.16014, lon: 4.48608, address: 'Breestraat 18', cuisine: 'Steakhouse', meal: 'diner', text: 'Vlees van de grill aan het begin van de Breestraat.' },
   ],
 };
