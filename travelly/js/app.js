@@ -66,12 +66,12 @@ function favBtn(trip, p, cls = '') {
 }
 
 function placeCard(trip, p, { compact = false } = {}) {
-  const meta = [p.sub, p.km != null ? distLabel(p.km) : null].filter(Boolean).join(' · ');
+  const meta = [p.sub, p.km != null ? kmLabel(p.km) : null].filter(Boolean).join(' · ');
   return `<article class="pcard${compact ? ' compact' : ''}">
     <a class="pcard-img" href="#/r/${trip.id}/p/${enc(p.id)}">${photoOrPh(p, compact ? 250 : 500)}</a>
     <a class="pcard-body" href="#/r/${trip.id}/p/${enc(p.id)}">
       <h3>${esc(p.name)}</h3>
-      <p class="meta">${esc(meta)}</p>
+      <p class="meta">${esc(meta)}${feeBadge(p)}</p>
       ${!compact && (p.short || p.text) ? `<p class="desc">${esc(p.short || p.text)}</p>` : ''}
       ${cardFit(trip, p)}
       ${p.kind === 'food' && p.menu?.dishes?.length ? `<p class="meta small dishline">${icon('food')} ${esc(p.menu.dishes.slice(0, 3).join(' · '))}</p>` : ''}
@@ -80,6 +80,15 @@ function placeCard(trip, p, { compact = false } = {}) {
     </a>
     ${favBtn(trip, p)}
   </article>`;
+}
+
+// "in de omgeving · 3,4 km" voor alles verder dan 2 km van het centrum
+const kmLabel = (km) => (km > 2 ? `in de omgeving · ${distLabel(km)}` : distLabel(km));
+
+const FEE = { gratis: ['Gratis', 'free'], buiten: ['Gratis van buiten', 'free'], entree: ['Entree', 'paid'] };
+function feeBadge(p) {
+  const f = p.kind === 'sight' && FEE[p.fee];
+  return f ? ` <span class="fee ${f[1]}">${f[0]}</span>` : '';
 }
 
 function cardFit(trip, p) {
@@ -395,6 +404,7 @@ function newTrip() {
       <div class="seg" id="tempo">
         ${[['rustig', 'Rustig'], ['normaal', 'Normaal'], ['actief', 'Actief']].map(([k, l]) => `<button type="button" class="${st.tempo === k ? 'on' : ''}" data-t="${k}">${l}</button>`).join('')}
       </div>
+      <label class="check"><input type="checkbox" id="free"> Liefst gratis uitjes</label>
     </section>
     <label class="check"><input type="checkbox" id="autoplan" checked> Maak meteen een slimme planning</label>
     <button class="btn big" type="submit" id="go" disabled>Maak mijn reis ${icon('right')}</button>
@@ -454,7 +464,7 @@ function newTrip() {
     const c = st.city;
     const trip = S.createTrip({
       city: { name: c.name, country: c.country, region: c.region, lat: c.lat, lon: c.lon, guide: c.guide || guideFor(c)?.id || null },
-      start: d1.value, end: d2.value, persons: partyCount(st.party), party: partyClean(st.party), prefs: { interests: st.interests, tempo: st.tempo },
+      start: d1.value, end: d2.value, persons: partyCount(st.party), party: partyClean(st.party), prefs: { interests: st.interests, tempo: st.tempo, free: $('#free').checked },
     });
     if ($('#autoplan').checked) await buildPlan(trip).catch(() => {});
     location.hash = `#/r/${trip.id}`;
@@ -562,7 +572,7 @@ ${familyOf(trip) && g?.familyTips ? `<section class="block"><div class="block-h"
 
 // ------------------------------------------------------------------ LIJSTEN
 const LISTS = {
-  sight: { title: 'Bezienswaardigheden', path: 'zien', filters: [['top', 'Aanbevolen'], ['museum', 'Musea'], ['historisch', 'Historisch'], ['natuur', 'Natuur'], ['wandelen', 'Wandelen'], ['binnen', 'Bij regen'], ['dagtrip', 'Dagtrips']] },
+  sight: { title: 'Bezienswaardigheden', path: 'zien', filters: [['top', 'Aanbevolen'], ['gratis', 'Gratis'], ['museum', 'Musea'], ['historisch', 'Historisch'], ['natuur', 'Natuur'], ['wandelen', 'Wandelen'], ['binnen', 'Bij regen'], ['dagtrip', 'Dagtrips']] },
   hotel: { title: 'Hotels', path: 'hotels', filters: [['all', 'Alles'], ['centrum', 'Dichtbij centrum'], ['boutique', 'Boutique'], ['station', 'Bij station']] },
   food: { title: 'Restaurants', path: 'eten', filters: [['all', 'Alles'], ['lunch', 'Lunch'], ['diner', 'Diner'], ['dichtbij', 'Dichtbij']] },
 };
@@ -606,7 +616,17 @@ async function listPage(id, kind) {
       if (filter === 'top') l = l.filter((s) => s.cat !== 'dagtrip' && s.cat !== 'spelen').sort((a, b) => (b.prio + fs(b)) - (a.prio + fs(a)) || (a.rank ?? 0) - (b.rank ?? 0) || a.km - b.km);
       else if (filter === 'kids') l = l.filter((s) => s.cat !== 'dagtrip' && kidFit(s, fam)?.level !== 'nee').sort((a, b) => fs(b) - fs(a) || b.prio - a.prio);
       else if (filter === 'binnen') l = l.filter((s) => s.indoor && s.cat !== 'spelen');
+      else if (filter === 'gratis') l = l.filter((s) => s.fee === 'gratis' || s.fee === 'buiten').sort((a, b) => b.prio - a.prio || a.km - b.km);
       else l = l.filter((s) => s.cat === filter);
+      // plekken verder weg apart, onder 'In de omgeving'
+      if (filter !== 'dagtrip') {
+        const near = l.filter((s) => !(s.km > 2)), far = l.filter((s) => s.km > 2).sort((a, b) => a.km - b.km);
+        if (far.length && near.length) {
+          $('#list').innerHTML = near.map((p) => placeCard(trip, p)).join('') +
+            `<h2 class="list-h">${icon('route')} In de omgeving <small>verder dan 2 km van het centrum</small></h2>` + far.map((p) => placeCard(trip, p)).join('');
+          return;
+        }
+      }
     } else if (kind === 'hotel') {
       if (filter === 'centrum') l = l.filter((h) => h.km < 0.8).sort((a, b) => a.km - b.km);
       if (filter === 'boutique') l = l.filter((h) => /boutique|suites|design|klein/i.test(h.style + h.name));
@@ -636,12 +656,14 @@ async function detail(id, pid) {
   if (p.kind === 'sight') {
     if (p.dur) chips.push(`${icon('clock')} ${p.dur >= 120 ? String(Math.round(p.dur / 30) / 2).replace('.', ',') + ' uur' : p.dur + ' min'}`);
     chips.push(`${icon(p.indoor ? 'museum' : 'sun')} ${p.indoor ? 'Binnen' : 'Buiten'}`);
+    if (FEE[p.fee]) chips.push(`<b class="fee-chip ${FEE[p.fee][1]}">${icon('ticket')} ${FEE[p.fee][0]}${p.fee === 'buiten' ? ' (binnen kan entree gelden)' : p.fee === 'entree' ? ' (prijs: zie website)' : ''}</b>`);
   }
   if (p.kind === 'food' && p.cuisine) chips.push(`${icon('food')} ${esc(p.cuisine)}`);
-  if (p.kind === 'food' && p.meal) chips.push(`${icon('clock')} ${p.meal === 'lunch' ? 'Lunch' : p.meal === 'diner' ? 'Diner' : 'Lunch & diner'}`);
+  if (p.kind === 'food' && p.meal) chips.push(`${icon('clock')} ${p.meal === 'lunch' ? 'Lunch' : p.meal === 'diner' ? 'Diner' : 'Lunch & diner'}${p.allround ? ' · all-round' : ''}`);
+  if (p.kind === 'food' && p.hours) chips.push(`${icon('calendar')} ${esc(p.hours.replace(/Mo/g, 'ma').replace(/Tu/g, 'di').replace(/We/g, 'wo').replace(/Th/g, 'do').replace(/Fr/g, 'vr').replace(/Sa/g, 'za').replace(/Su/g, 'zo').replace(/off/g, 'dicht'))}`);
   if (p.kind === 'hotel' && p.stars) chips.push(`${icon('star')} ${p.stars} sterren`);
   if (p.kind === 'hotel' && p.style) chips.push(`${icon('bed')} ${esc(p.style)}`);
-  if (p.km != null) chips.push(`${icon('walk')} ${distLabel(p.km)} van het centrum`);
+  if (p.km != null) chips.push(`${icon(p.km > 2 ? 'route' : 'walk')} ${p.km > 2 ? 'In de omgeving, ' : ''}${distLabel(p.km)} van het centrum`);
 
   const days = trip.plan?.days || tripDates(trip).map((date) => ({ date }));
   view.innerHTML = `
@@ -859,7 +881,8 @@ function planIntro(trip) {
 }
 
 function dayCard(trip, d, i, w, ex) {
-  const pts = d.items.filter((x) => x.lat);
+  // de dagroute is een wandelroute: de fietstocht naar de omgeving laten we eruit
+  const pts = d.items.filter((x) => x.lat && !(x.kind === 'tour' && x.icon === 'route'));
   const route = gmaps.day(pts);
   let prev = null;
   return `<section class="day" id="day-${d.date}">
@@ -883,6 +906,8 @@ function dayCard(trip, d, i, w, ex) {
           <b>${esc(it.title)}${link ? ` ${icon('right', 'tl-arrow')}` : ''}</b>
           ${it.sub ? `<small>${esc(it.sub)}</small>` : ''}
           ${it.note ? `<p>${esc(it.note)}</p>` : ''}
+          ${it.stops?.length ? `<span class="stops">${it.stops.map((s) => `<a href="#/r/${trip.id}/p/${enc(s.id)}">${esc(s.name)}${s.km > 2 ? ` <small>(${distLabel(s.km)})</small>` : ''}</a>`).join('')}</span>
+            <a class="tour-link" target="_blank" rel="noopener" href="${gmaps.day(it.icon === 'route' ? [trip.city, ...it.stops, trip.city] : it.stops, it.icon === 'route' ? 'bicycling' : 'walking')}">${icon('route')} Route in Google Maps</a>` : ''}
         ${link ? '</a>' : '</div>'}
         <button class="tl-go" data-edit aria-label="${esc(it.title)} aanpassen">${icon('edit')}</button>
       </li>`;
@@ -921,11 +946,16 @@ async function editItem(trip, date, itemId) {
     options = [...favs.map((x) => ({ ...x, grp: 'Favorieten' })), ...s.filter((x) => familyOf(trip) || x.cat !== 'spelen').map((x) => ({ ...x, grp: x.cat === 'spelen' ? 'Spelen' : 'Bezienswaardigheden' })), ...f.map((x) => ({ ...x, grp: 'Restaurants' }))];
   } catch { /* alleen vrije tekst */ }
   const groups = [...new Set(options.map((o) => o.grp))];
+  // Wisselen: andere plek van hetzelfde soort, dichtstbijzijnde eerst (favorieten bovenaan)
+  const isLunch = it && /^Lunch/.test(it.title);
+  const swaps = it?.refId ? options.filter((o) => o.grp !== 'Favorieten' && o.kind === it.kind && o.id !== it.refId && (it.kind !== 'food' || (isLunch ? o.meal !== 'diner' : o.meal !== 'lunch')))
+    .map((o) => ({ ...o, d: distKm(it, o), fav: !!trip.favorites?.[o.id] })).sort((a, b) => (b.fav - a.fav) || a.d - b.d).slice(0, 25) : [];
   sheet(`
     <h2 class="sheet-t">${it ? 'Onderdeel aanpassen' : `Toevoegen aan ${fmt.day(date)} ${fmt.short(date)}`}</h2>
     <form class="form tight" id="ef">
       <label>Tijd<input type="time" id="et" value="${it?.time || '14:00'}" required></label>
       ${it ? '' : `<label>Kies een plek<select id="ep"><option value="">— Eigen invulling —</option>${groups.map((g) => `<optgroup label="${g}">${options.filter((o) => o.grp === g).map((o) => `<option value="${esc(o.id)}">${esc(o.name)}</option>`).join('')}</optgroup>`).join('')}</select></label>`}
+      ${swaps.length ? `<label>${it.kind === 'food' ? 'Ander restaurant' : 'Andere plek'}<select id="eswap"><option value="">— Houden: ${esc(it.title.replace(/^(Lunch|Diner|Vroeg eten) bij /, ''))} —</option>${swaps.map((o) => `<option value="${esc(o.id)}">${o.fav ? '♥ ' : ''}${esc(o.name)}${o.cuisine ? ' · ' + esc(o.cuisine) : ''} · ${distLabel(o.d)}</option>`).join('')}</select></label>` : ''}
       <label>Omschrijving<input id="etitle" value="${esc(it?.title || '')}" placeholder="Bijv. Fietsen huren"></label>
       <label>Notitie<textarea id="enote" rows="2" placeholder="Optioneel">${esc(it?.note || '')}</textarea></label>
       <div class="row">
@@ -935,6 +965,11 @@ async function editItem(trip, date, itemId) {
     </form>`, {
     onMount(el, close) {
       const ep = $('#ep', el);
+      const es = $('#eswap', el);
+      es?.addEventListener('change', () => {
+        const o = swaps.find((x) => x.id === es.value);
+        $('#etitle', el).value = o ? (it.kind === 'food' ? it.title.replace(/ bij .*$/, ' bij ' + o.name) : o.name) : it.title;
+      });
       ep?.addEventListener('change', () => {
         const o = options.find((x) => x.id === ep.value);
         if (o) $('#etitle', el).value = o.kind === 'food' ? `${$('#et', el).value < '16:00' ? 'Lunch' : 'Diner'} bij ${o.name}` : o.name;
@@ -949,7 +984,11 @@ async function editItem(trip, date, itemId) {
         const o = ep ? options.find((x) => x.id === ep.value) : null;
         if (!title && !o) return;
         S.updateTrip(trip.id, () => {
-          if (it) Object.assign(it, { time: $('#et', el).value, title: title || it.title, note: $('#enote', el).value.trim() });
+          if (it) {
+            const sw = es ? swaps.find((x) => x.id === es.value) : null;
+            Object.assign(it, { time: $('#et', el).value, title: title || it.title, note: $('#enote', el).value.trim() });
+            if (sw) Object.assign(it, { refId: sw.id, lat: sw.lat, lon: sw.lon, sub: sw.cuisine || sw.short || sw.sub || '', note: sw.tip || '' });
+          }
           else day.items.push({
             id: S.uid('i'), time: $('#et', el).value, title: title || o.name, note: $('#enote', el).value.trim(),
             ...(o ? { kind: o.kind, refId: o.id, lat: o.lat, lon: o.lon, sub: o.sub } : { kind: 'custom', icon: 'pin' }),
@@ -1006,9 +1045,9 @@ async function weatherPage(id) {
       if (w.tmax == null) return `<div class="wx-row"><div><b>${fmt.dayCap(w.date)}</b><small>${fmt.short(w.date)}</small></div><span class="muted">Nog geen gegevens</span></div>`;
       const wi = weatherInfo(w.code);
       return `<div class="wx-row"><div><b>${fmt.dayCap(w.date)}</b><small>${fmt.short(w.date)}</small></div>
-        <div class="wx-ic">${icon(wi.icon, 'wx-' + wi.icon)}<small>${wi.label}</small></div>
+        <div class="wx-ic">${icon(wi.icon, 'wx-' + wi.icon)}<small>${wi.label}${w.sun != null ? `<br>${w.sun}% zon` : ''}</small></div>
         <div class="wx-t"><b>${Math.round(w.tmax)}°</b><small>${Math.round(w.tmin)}°</small></div>
-        <div class="wx-p">${icon('drop')}${w.pop ?? '–'}%</div></div>`;
+        <div class="wx-p">${icon('drop')}${w.source === 'verwachting' ? `${(Math.round((w.rain ?? 0) * 10) / 10).toString().replace('.', ',')} mm` : `${w.pop ?? '–'}%`}</div></div>`;
     }).join('')}</div>
     ${climate ? `<p class="hint">${icon('info')} Voor dagen verder dan ruim twee weken vooruit tonen we het gemiddelde weer op die datums in de afgelopen drie jaar. Zodra jullie reis dichterbij komt, verschijnt hier de echte verwachting.</p>` : ''}
     <div class="tip hl">${icon('lightbulb')}<div><b>Tip voor je reis</b><p>${tip}</p></div></div>
@@ -1175,6 +1214,7 @@ function settings(id) {
       <div class="chips" id="si">${[['cultuur', 'Cultuur & musea'], ['wandelen', 'Wandelen & grachten'], ['natuur', 'Natuur & parken']].map(([k, l]) => `<button type="button" class="chip${p.interests?.includes(k) ? ' on' : ''}" data-i="${k}">${l}</button>`).join('')}</div>
       <span class="flabel">Tempo</span>
       <div class="seg" id="st">${[['rustig', 'Rustig'], ['normaal', 'Normaal'], ['actief', 'Actief']].map(([k, l]) => `<button type="button" class="${p.tempo === k ? 'on' : ''}" data-t="${k}">${l}</button>`).join('')}</div>
+      <label class="check"><input type="checkbox" id="sfree"${p.free ? ' checked' : ''}> Liefst gratis uitjes</label>
     </section>
     <button class="btn big">${icon('check')} Opslaan</button>
   </form>
@@ -1196,10 +1236,11 @@ function settings(id) {
     if (s2 < s1) s2 = s1;
     if (daysBetween(s1, s2) > 20) { alert('Een reis kan maximaal 21 dagen duren.'); return; }
     const datesChanged = s1 !== trip.start || s2 !== trip.end;
-    const partyChanged = JSON.stringify(partyClean(party)) !== before;
+    const newPrefs = { interests: $$('#si .on').map((x) => x.dataset.i), tempo, free: $('#sfree').checked };
+    const partyChanged = JSON.stringify(partyClean(party)) !== before || JSON.stringify(newPrefs) !== JSON.stringify({ interests: p.interests || [], tempo: p.tempo || 'normaal', free: !!p.free });
     S.updateTrip(id, (t) => {
       t.start = s1; t.end = s2; t.persons = partyCount(party); t.party = partyClean(party);
-      t.prefs = { interests: $$('#si .on').map((x) => x.dataset.i), tempo };
+      t.prefs = newPrefs;
       if (datesChanged && t.plan) {
         // bestaande dagen meeschuiven naar de nieuwe datums
         const nd = tripDates(t);
@@ -1207,7 +1248,7 @@ function settings(id) {
       }
     });
     toast('Opgeslagen');
-    if (partyChanged && trip.plan && confirm('Wie er meegaat is veranderd. Zal ik de planning daarop opnieuw maken?')) buildPlan(trip).then(() => { location.hash = `#/r/${id}/planning`; }).catch(() => { location.hash = `#/r/${id}`; });
+    if (partyChanged && trip.plan && confirm('Jullie voorkeuren of wie er meegaat zijn veranderd. Zal ik de planning daarop opnieuw maken?')) buildPlan(trip).then(() => { location.hash = `#/r/${id}/planning`; }).catch(() => { location.hash = `#/r/${id}`; });
     else location.hash = `#/r/${id}`;
   };
   $('#exp').onclick = async () => download(await S.exportTrip(trip), `travelly-${trip.city.name.toLowerCase()}-${trip.start}.json`);

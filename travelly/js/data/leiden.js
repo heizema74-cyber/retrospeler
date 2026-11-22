@@ -61,7 +61,7 @@ export const LEIDEN = {
 
   sights: [
     {
-      id: 'rapenburg', name: 'Rapenburg', cat: 'wandelen', indoor: false, dur: 45, prio: 5,
+      id: 'rapenburg', fee: 'gratis', name: 'Rapenburg', cat: 'wandelen', indoor: false, dur: 45, prio: 5,
       lat: 52.15722, lon: 4.48583, address: 'Rapenburg, Leiden',
       short: 'De mooiste gracht van Nederland',
       text: 'Statige grachtenpanden, bruggen en eeuwenoude bomen: de Rapenburg wordt vaak de mooiste gracht van Nederland genoemd. Langs het water liggen het Academiegebouw, het Rijksmuseum van Oudheden en de ingang van de Hortus.',
@@ -71,7 +71,7 @@ export const LEIDEN = {
       fam: {min: 0, buggy: "ja", text: "Bootjes en eendjes kijken. Vlakke stoepen, prima met de buggy. Let op: er staan geen hekken langs het water."},
     },
     {
-      id: 'hortus', name: 'Hortus botanicus', cat: 'natuur', indoor: false, dur: 90, prio: 5,
+      id: 'hortus', fee: 'entree', name: 'Hortus botanicus', cat: 'natuur', indoor: false, dur: 90, prio: 5,
       lat: 52.15709, lon: 4.48452, address: 'Rapenburg 73, Leiden',
       short: 'Oudste botanische tuin van Nederland',
       text: 'Sinds 1590 groeien hier planten uit de hele wereld. Loop door de historische kassen met de reuzenwaterlelie, de Japanse tuin van Von Siebold en de Clusiustuin, waar de eerste tulpen van Nederland bloeiden.',
@@ -82,7 +82,7 @@ export const LEIDEN = {
       fam: {min: 0, buggy: "ja", text: "De warme kassen met reuzenbladeren en het water zijn een avontuur voor kleine kinderen. De meeste paden zijn goed te doen met een buggy."},
     },
     {
-      id: 'burcht', name: 'De Burcht', cat: 'historisch', indoor: false, dur: 40, prio: 5,
+      id: 'burcht', fee: 'gratis', name: 'De Burcht', cat: 'historisch', indoor: false, dur: 40, prio: 5,
       lat: 52.15887, lon: 4.49280, address: 'Burgsteeg 14, Leiden',
       short: 'Middeleeuwse burcht met uitzicht',
       text: 'Een ronde burcht op een kunstmatige heuvel, ruim negenhonderd jaar oud. Loop over de weergang en kijk uit over de rode daken, torens en grachten. Gratis en elke dag te bezoeken.',
@@ -92,7 +92,7 @@ export const LEIDEN = {
       fam: {min: 3, buggy: "nee", text: "Een echt kasteel met een muur om op te lopen: spannend! Er zijn trappen, dus laat de buggy beneden en houd de kleinste aan de hand."},
     },
     {
-      id: 'lakenhal', name: 'Museum De Lakenhal', cat: 'museum', indoor: true, dur: 120, prio: 5,
+      id: 'lakenhal', fee: 'entree', name: 'Museum De Lakenhal', cat: 'museum', indoor: true, dur: 120, prio: 5,
       lat: 52.16299, lon: 4.48755, address: 'Oude Singel 32, Leiden',
       short: 'Rembrandt, Lucas van Leyden en de Gouden Eeuw',
       text: 'Het stedelijk museum in de voormalige hal van de lakenindustrie. Ontdek vroeg werk van Rembrandt, het beroemde Laatste Oordeel van Lucas van Leyden en het verhaal van de stad, van textiel tot het beleg van 1574.',
@@ -102,7 +102,7 @@ export const LEIDEN = {
       fam: {min: 5, buggy: null, text: "Vraag bij de balie wat er voor kinderen is. Met kleine kinderen: kies een paar zalen en houd het kort."},
     },
     {
-      id: 'rmo', name: 'Rijksmuseum van Oudheden', cat: 'museum', indoor: true, dur: 120, prio: 4,
+      id: 'rmo', fee: 'entree', name: 'Rijksmuseum van Oudheden', cat: 'museum', indoor: true, dur: 120, prio: 4,
       lat: 52.15833, lon: 4.48583, address: 'Rapenburg 28, Leiden',
       short: 'Een echte Egyptische tempel',
       text: 'Het nationale archeologiemuseum. In de centrale hal staat de Tempel van Taffeh, een complete Egyptische tempel. Daarnaast mummies, Grieken, Romeinen en de vroegste geschiedenis van Nederland.',
@@ -112,7 +112,7 @@ export const LEIDEN = {
       fam: {min: 4, buggy: null, text: "Mummies en een echte tempel: vanaf een jaar of 4 vaak een groot succes. Voor peuters vooral kijken."},
     },
     {
-      id: 'boerhaave', name: 'Rijksmuseum Boerhaave', cat: 'museum', indoor: true, dur: 90, prio: 4,
+      id: 'boerhaave', fee: 'entree', name: 'Rijksmuseum Boerhaave', cat: 'museum', indoor: true, dur: 90, prio: 4,
       lat: 52.16139, lon: 4.48889, address: 'Lange Sint Agnietenstraat 10, Leiden',
       short: 'Wetenschap en geneeskunde',
       text: 'Het museum van de geschiedenis van wetenschap en geneeskunde, in een voormalig klooster. Zie de microscopen van Van Leeuwenhoek, het anatomisch theater en de slingeruurwerken van Huygens.',
@@ -122,7 +122,7 @@ export const LEIDEN = {
       fam: {min: 7, buggy: null, text: "Vooral interessant voor wat oudere kinderen. Voor peuters is er weinig te doen."},
     },
     {
-      id: 'naturalis', name: 'Naturalis', cat: 'museum', indoor: true, dur: 150, prio: 4,
+      id: 'naturalis', fee: 'entree', name: 'Naturalis', cat: 'museum', indoor: true, dur: 150, prio: 4,
       lat: 52.16492, lon: 4.47289, address: 'Darwinweg 2, Leiden',
       short: 'T. rex Trix en 42 miljoen objecten',
       text: 'Het nationale natuurhistorisch museum, in een spectaculair gebouw. Sta oog in oog met T. rex Trix, ontdek de dinozaal, de ijstijd en de vroege mens. Ideaal voor een regenachtige dag.',
@@ -142,7 +142,7 @@ export const LEIDEN = {
       fam: {min: 6, buggy: "ja", text: "Mooi gebouw, maar weinig voor kleine kinderen: kort binnenlopen is genoeg."},
     },
     {
-      id: 'devalk', name: 'Molen De Valk', cat: 'historisch', indoor: true, dur: 60, prio: 3,
+      id: 'devalk', fee: 'entree', name: 'Molen De Valk', cat: 'historisch', indoor: true, dur: 60, prio: 3,
       lat: 52.16444, lon: 4.48667, address: 'Tweede Binnenvestgracht 1, Leiden',
       short: 'Stellingmolen en museum',
       text: 'Een hoge stellingmolen uit 1743 aan de singel, tegenwoordig een museum. Klim naar de stelling en zie hoe het leven van een molenaarsfamilie eruitzag. Rembrandt was de zoon van een Leidse molenaar.',
@@ -152,7 +152,7 @@ export const LEIDEN = {
       fam: {min: 4, buggy: "nee", text: "Een echte molen van binnen! De trappen zijn steil en de stelling is hoog: niet voor de allerkleinsten."},
     },
     {
-      id: 'siebold', name: 'Japanmuseum SieboldHuis', cat: 'museum', indoor: true, dur: 75, prio: 3,
+      id: 'siebold', fee: 'entree', name: 'Japanmuseum SieboldHuis', cat: 'museum', indoor: true, dur: 75, prio: 3,
       lat: 52.15965, lon: 4.48453, address: 'Rapenburg 19, Leiden',
       short: 'Japan in een grachtenpand',
       text: 'Het huis van Philipp Franz von Siebold, de arts die in de 19e eeuw Japan in kaart bracht. Prachtige collectie Japanse kunst, voorwerpen en planten in een historisch pand aan de Rapenburg.',
@@ -162,7 +162,7 @@ export const LEIDEN = {
       fam: {min: 6, buggy: null, text: "Rustig museum; voor jonge kinderen kort houden."},
     },
     {
-      id: 'wereldmuseum', name: 'Wereldmuseum Leiden', cat: 'museum', indoor: true, dur: 90, prio: 3,
+      id: 'wereldmuseum', fee: 'entree', name: 'Wereldmuseum Leiden', cat: 'museum', indoor: true, dur: 90, prio: 3,
       lat: 52.16306, lon: 4.48250, address: 'Steenstraat 1, Leiden',
       short: 'Culturen van de hele wereld',
       text: 'Een van de oudste volkenkundige musea ter wereld. Reis van Japan en Indonesië naar Afrika en de Amerika\'s, met indrukwekkende beelden, maskers en textiel.',
@@ -171,7 +171,7 @@ export const LEIDEN = {
       fam: {min: 4, buggy: null, text: "Maskers en grote beelden spreken kinderen aan. Kies samen een paar zalen."},
     },
     {
-      id: 'muurgedichten', name: 'Muurgedichtenroute', cat: 'wandelen', indoor: false, dur: 75, prio: 4,
+      id: 'muurgedichten', fee: 'gratis', name: 'Muurgedichtenroute', cat: 'wandelen', indoor: false, dur: 75, prio: 4,
       lat: 52.16010, lon: 4.48720, address: 'Binnenstad Leiden',
       short: 'Poëzie op de gevels van de stad',
       text: 'Sinds 1992 zijn in Leiden meer dan honderd gedichten op muren geschilderd, in tientallen talen, van Shakespeare en Lorca tot Marsman. Een wandeling langs de gedichten brengt je vanzelf in de mooiste straatjes.',
@@ -182,7 +182,7 @@ export const LEIDEN = {
       website: 'https://tegen-beeld.nl/',
     },
     {
-      id: 'hofjes', name: 'Hofjeswandeling', cat: 'wandelen', indoor: false, dur: 75, prio: 3,
+      id: 'hofjes', fee: 'gratis', name: 'Hofjeswandeling', cat: 'wandelen', indoor: false, dur: 75, prio: 3,
       lat: 52.15680, lon: 4.49620, address: 'Sint Annahofje, Hooglandse Kerkgracht, Leiden',
       short: 'Verborgen binnentuinen',
       text: 'Leiden telt zo\'n 35 hofjes: rustige binnentuinen met kleine huisjes, oorspronkelijk gesticht voor ouderen en alleenstaanden. Veel hofjes zijn overdag vrij toegankelijk, zolang je de rust respecteert.',
@@ -192,7 +192,7 @@ export const LEIDEN = {
       fam: {min: 0, buggy: "deels", text: "Het zijn woonhofjes: houd het rustig en kort. Met een slapende peuter in de buggy juist heerlijk."},
     },
     {
-      id: 'rondvaart', name: 'Rondvaart door de grachten', cat: 'wandelen', indoor: false, dur: 60, prio: 4,
+      id: 'rondvaart', fee: 'entree', name: 'Rondvaart door de grachten', cat: 'wandelen', indoor: false, dur: 60, prio: 4,
       lat: 52.16270, lon: 4.48640, address: 'Beestenmarkt, Leiden',
       short: 'De stad vanaf het water',
       text: 'Vaar onder lage bruggen door langs de singels en grachten. De schipper vertelt over het beleg, de Gouden Eeuw en wie er achter de gevels woonde. Of huur zelf een elektrische sloep.',
@@ -202,7 +202,7 @@ export const LEIDEN = {
       fam: {min: 0, buggy: "deels", text: "Kinderen vinden varen geweldig. Vraag bij het boeken of de buggy (ingeklapt) mee kan."},
     },
     {
-      id: 'gravensteen', name: 'Gravensteen', cat: 'historisch', indoor: false, dur: 25, prio: 2,
+      id: 'gravensteen', fee: 'buiten', name: 'Gravensteen', cat: 'historisch', indoor: false, dur: 25, prio: 2,
       lat: 52.15806, lon: 4.48694, address: 'Pieterskerkhof 6, Leiden',
       short: 'Voormalige gevangenis',
       text: 'Het oude gravelijke gevangenis- en rechtsgebouw naast de Pieterskerk, nu in gebruik bij de universiteit. Prachtige gevels uit verschillende eeuwen.',
@@ -211,7 +211,7 @@ export const LEIDEN = {
       fam: {min: 8, buggy: "ja", text: "Vooral van buiten te bekijken; snel gezien."},
     },
     {
-      id: 'academiegebouw', name: 'Academiegebouw', cat: 'historisch', indoor: false, dur: 30, prio: 3,
+      id: 'academiegebouw', fee: 'buiten', name: 'Academiegebouw', cat: 'historisch', indoor: false, dur: 30, prio: 3,
       lat: 52.15694, lon: 4.48556, address: 'Rapenburg 73, Leiden',
       short: 'Hart van de oudste universiteit',
       text: 'Sinds 1581 het hart van de Universiteit Leiden, in een voormalige kloosterkapel. Hier promoveren studenten nog altijd. Beroemd is het Zweetkamertje, met duizenden handtekeningen op de muren.',
@@ -232,7 +232,7 @@ export const LEIDEN = {
       website: 'http://www.hooglandsekerk.com',
     },
     {
-      id: 'pilgrim', name: 'Leiden American Pilgrim Museum', cat: 'museum', indoor: true, dur: 45, prio: 2,
+      id: 'pilgrim', fee: 'entree', name: 'Leiden American Pilgrim Museum', cat: 'museum', indoor: true, dur: 45, prio: 2,
       lat: 52.15744, lon: 4.48829, address: 'Beschuitsteeg 9, Leiden',
       short: 'Klein huis, groot verhaal',
       text: 'In een van de oudste huizen van Leiden (14e eeuw) vertelt dit kleine museum over de Pilgrim Fathers, die in Leiden woonden voordat ze in 1620 met de Mayflower naar Amerika vertrokken.',
@@ -243,7 +243,7 @@ export const LEIDEN = {
       website: 'https://leidenamericanpilgrimmuseum.org/',
     },
     {
-      id: 'morspoort', name: 'Morspoort', cat: 'historisch', indoor: false, dur: 20, prio: 2,
+      id: 'morspoort', fee: 'gratis', name: 'Morspoort', cat: 'historisch', indoor: false, dur: 20, prio: 2,
       lat: 52.16194, lon: 4.48194, address: 'Morspoort, Leiden',
       short: 'Een van de twee overgebleven stadspoorten',
       text: 'Een fotogenieke stadspoort uit 1669 met ophaalbrug, aan de westkant van de binnenstad. Samen met de Zijlpoort is dit het enige dat nog over is van de vroegere stadsomwalling.',
@@ -252,7 +252,7 @@ export const LEIDEN = {
       fam: {min: 0, buggy: "ja", text: "Vlak bij De Put staat een speeltuin met piratenschip: mooi te combineren."},
     },
     {
-      id: 'zijlpoort', name: 'Zijlpoort', cat: 'historisch', indoor: false, dur: 20, prio: 2,
+      id: 'zijlpoort', fee: 'gratis', name: 'Zijlpoort', cat: 'historisch', indoor: false, dur: 20, prio: 2,
       lat: 52.16167, lon: 4.50417, address: 'Zijlpoort, Leiden',
       short: 'Stadspoort aan de Zijlsingel',
       text: 'De tweede overgebleven stadspoort, aan het water van de Zijlsingel. Een mooi eindpunt van een wandeling door het Singelpark.',
@@ -261,7 +261,7 @@ export const LEIDEN = {
       fam: {min: 0, buggy: "ja", text: "Rustige plek aan het water, prima met de buggy."},
     },
     {
-      id: 'singelpark', name: 'Singelpark', cat: 'natuur', indoor: false, dur: 90, prio: 3,
+      id: 'singelpark', fee: 'gratis', name: 'Singelpark', cat: 'natuur', indoor: false, dur: 90, prio: 3,
       lat: 52.16381, lon: 4.48436, address: 'Singelpark, Leiden',
       short: 'Groene ring om de binnenstad',
       text: 'Een wandelpark van ruim zes kilometer langs de oude stadssingels, met bruggen, tuinen, de Plantage en De Put. Perfect om de stad van de groene kant te zien.',
@@ -271,7 +271,7 @@ export const LEIDEN = {
       fam: {min: 0, buggy: "ja", text: "Ruimte om te rennen, bruggetjes en eenden voeren. Bij De Put staat een speeltuin met piratenschip."},
     },
     {
-      id: 'sterrewacht', name: 'Oude Sterrewacht', cat: 'historisch', indoor: true, dur: 60, prio: 2,
+      id: 'sterrewacht', fee: 'entree', name: 'Oude Sterrewacht', cat: 'historisch', indoor: true, dur: 60, prio: 2,
       lat: 52.15484, lon: 4.48388, address: 'Sterrenwachtlaan 11, Leiden',
       short: 'Oudste universiteitssterrenwacht ter wereld',
       text: 'De oudste nog bestaande universiteitssterrenwacht ter wereld, naast de Hortus. Op gezette tijden zijn er rondleidingen en publieksavonden waarbij je door de historische telescopen kijkt.',
@@ -282,7 +282,7 @@ export const LEIDEN = {
       website: 'https://www.universiteitleiden.nl/en/science/astronomy',
     },
     {
-      id: 'leidsehout', name: 'Leidse Hout', cat: 'natuur', indoor: false, dur: 75, prio: 2,
+      id: 'leidsehout', fee: 'gratis', name: 'Leidse Hout', cat: 'natuur', indoor: false, dur: 75, prio: 2,
       lat: 52.17528, lon: 4.48111, address: 'Leidse Hout, Leiden',
       short: 'Stadspark met theehuis',
       text: 'Een landschapspark aan de noordkant van de stad met vijvers, een hertenkamp, speeltuin en een theehuis. Fijn voor een rustige ochtend of een picknick.',
@@ -291,7 +291,7 @@ export const LEIDEN = {
       fam: {min: 0, buggy: "ja", text: "Hertenkamp, speeltuin en een theehuis: een perfecte ochtend met kleine kinderen."},
     },
     {
-      id: 'oudpoelgeest', name: 'Kasteel Oud-Poelgeest', cat: 'natuur', indoor: false, dur: 60, prio: 2,
+      id: 'oudpoelgeest', fee: 'gratis', name: 'Kasteel Oud-Poelgeest', cat: 'natuur', indoor: false, dur: 60, prio: 2,
       lat: 52.17961, lon: 4.48500, address: 'Oud-Poelgeest, Oegstgeest',
       short: 'Kasteel met Engelse landschapstuin',
       text: 'Net buiten Leiden ligt dit kasteel in een prachtig park, met de vijver, oude bomen en slingerende paden. Herman Boerhaave woonde er ooit. Combineer met de Leidse Hout.',
@@ -300,7 +300,7 @@ export const LEIDEN = {
       fam: {min: 0, buggy: "ja", text: "Mooie wandeling met de buggy door het park; ruimte om te rennen."},
     },
     {
-      id: 'keukenhof', name: 'Keukenhof', cat: 'dagtrip', indoor: false, dur: 300, prio: 5,
+      id: 'keukenhof', fee: 'entree', name: 'Keukenhof', cat: 'dagtrip', indoor: false, dur: 300, prio: 5,
       lat: 52.26889, lon: 4.54722, address: 'Stationsweg 166A, Lisse',
       short: 'De beroemdste bloementuin ter wereld',
       text: 'Ruim 30 hectare vol tulpen, narcissen en hyacinten, met paviljoens en de bollenvelden er direct omheen. Alleen in het voorjaar open. Vanaf Leiden Centraal rijdt er in het seizoen een directe bus.',
@@ -310,7 +310,7 @@ export const LEIDEN = {
       fam: {min: 0, buggy: "ja", text: "Brede paden, prima met de buggy. Er is ook iets voor kinderen te doen in het park, zoals een speeltuin: kijk op de website wat er dit jaar is."},
     },
     {
-      id: 'katwijk', name: 'Strand van Katwijk', cat: 'dagtrip', indoor: false, dur: 240, prio: 2,
+      id: 'katwijk', fee: 'gratis', name: 'Strand van Katwijk', cat: 'dagtrip', indoor: false, dur: 240, prio: 2,
       lat: 52.20306, lon: 4.39528, address: 'Boulevard, Katwijk aan Zee',
       short: 'Duinen en zee op 20 minuten',
       text: 'Een witte vuurtoren, een brede boulevard en de duinen van Berkheide. Met de bus of fiets ben je er zo vanuit Leiden: heerlijk op een zonnige dag.',
@@ -319,8 +319,8 @@ export const LEIDEN = {
       fam: {min: 0, buggy: "deels", text: "Zandkastelen bouwen! Over het zand rijdt een buggy lastig: een draagzak is handig."},
     },
     // ---- Spelen (alleen in beeld bij reizen met kinderen) ----
-    { id: 'p-piraat', name: 'Speeltuin met piratenschip', cat: 'spelen', indoor: false, dur: 45, prio: 2, family: true, lat: 52.16170, lon: 4.48220, address: 'Park De Put, Leiden', short: 'Klimmen op een piratenschip', text: 'Een speeltuin met een groot piratenschip, bij de Morspoort en het Singelpark. Ideaal voor een speelpauze tussen het sightseeën door.', todo: ['Klim op het piratenschip', 'Kijk naar de Morspoort aan de overkant', 'Wandel daarna verder door het Singelpark'], fam: { min: 1, buggy: 'ja', text: 'Gratis en centraal: perfect voor een pauze.' }, photos: [] },
-    { id: 'p-hertenkamp', name: 'Hertenkamp Leidse Hout', cat: 'spelen', indoor: false, dur: 60, prio: 2, family: true, lat: 52.17495, lon: 4.48182, address: 'Leidse Hout, Leiden', short: 'Herten kijken in het park', text: 'In het stadspark Leidse Hout kun je herten bekijken. Combineer met de speeltuin en het theehuis in het park.', todo: ['Bekijk de herten', 'Speel in de speeltuin in het park', 'Drink iets in het theehuis'], fam: { min: 0, buggy: 'ja', text: 'Heerlijk voor peuters en kleuters; vlakke paden.' }, photos: [] },
+    { id: 'p-piraat', fee: 'gratis', name: 'Speeltuin met piratenschip', cat: 'spelen', indoor: false, dur: 45, prio: 2, family: true, lat: 52.16170, lon: 4.48220, address: 'Park De Put, Leiden', short: 'Klimmen op een piratenschip', text: 'Een speeltuin met een groot piratenschip, bij de Morspoort en het Singelpark. Ideaal voor een speelpauze tussen het sightseeën door.', todo: ['Klim op het piratenschip', 'Kijk naar de Morspoort aan de overkant', 'Wandel daarna verder door het Singelpark'], fam: { min: 1, buggy: 'ja', text: 'Gratis en centraal: perfect voor een pauze.' }, photos: [] },
+    { id: 'p-hertenkamp', fee: 'gratis', name: 'Hertenkamp Leidse Hout', cat: 'spelen', indoor: false, dur: 60, prio: 2, family: true, lat: 52.17495, lon: 4.48182, address: 'Leidse Hout, Leiden', short: 'Herten kijken in het park', text: 'In het stadspark Leidse Hout kun je herten bekijken. Combineer met de speeltuin en het theehuis in het park.', todo: ['Bekijk de herten', 'Speel in de speeltuin in het park', 'Drink iets in het theehuis'], fam: { min: 0, buggy: 'ja', text: 'Heerlijk voor peuters en kleuters; vlakke paden.' }, photos: [] },
     { id: 'p-coebel', name: 'Kinderboerderij Coebel', cat: 'spelen', indoor: false, dur: 60, prio: 2, family: true, lat: 52.15106, lon: 4.47107, address: 'Leiden', short: 'Dieren aaien', text: 'Een kinderboerderij aan de westkant van Leiden, waar kinderen dieren van dichtbij kunnen zien.', todo: ['Bekijk en aai de dieren', 'Kijk of je mag helpen voeren', 'Speel buiten'], fam: { min: 0, buggy: 'ja', text: 'Leuk voor de allerkleinsten. Controleer de openingstijden.' }, photos: [] },
     { id: 'p-noorder', name: 'Speeltuin Noorderkwartier', cat: 'spelen', indoor: false, dur: 45, prio: 1, family: true, lat: 52.16667, lon: 4.49985, address: 'Noorderkwartier, Leiden', short: 'Buurtspeeltuin', text: 'Een speeltuin van een Leidse speeltuinvereniging. Bij zulke speeltuinen betaal je soms een kleine entree.', todo: ['Schommelen, glijden en klimmen'], fam: { min: 1, buggy: 'ja', text: 'Omheinde buurtspeeltuin.' }, photos: [] },
     { id: 'p-zuider', name: 'Speeltuin Zuiderkwartier', cat: 'spelen', indoor: false, dur: 45, prio: 1, family: true, lat: 52.14892, lon: 4.49215, address: 'Zuiderkwartier, Leiden', short: 'Buurtspeeltuin', text: 'Een speeltuin van een Leidse speeltuinvereniging. Bij zulke speeltuinen betaal je soms een kleine entree.', todo: ['Schommelen, glijden en klimmen'], fam: { min: 1, buggy: 'ja', text: 'Omheinde buurtspeeltuin.' }, photos: [] },
@@ -349,23 +349,23 @@ export const LEIDEN = {
   restaurants: [
     { id: 'r-doofpot', name: 'In den Doofpot', lat: 52.16196, lon: 4.48582, address: 'Turfmarkt 9', cuisine: 'Fine dining', meal: 'diner', text: 'Verfijnde keuken aan het water van de Turfmarkt. Voor een bijzondere avond.', menu: {"url": "https://www.indendoofpot.nl/menu", "dishes": [], "veg": true, "note": "À la carte en menu’s, ook een vegetarisch menu.", "hours": "Di en wo vanaf 17:30 · do t/m za vanaf 12:30", "checked": "november 2026"}, website: 'https://www.indendoofpot.nl/' },
     { id: 'r-prentenkabinet', name: 'Het Prentenkabinet', lat: 52.15725, lon: 4.48764, address: 'Kloksteeg 25', cuisine: 'Fine dining', meal: 'diner', text: 'Elegant restaurant in een historisch pand vlak bij de Pieterskerk, met een tuin.', menu: {"url": "https://www.prentenkabinet.nl/menukaart/", "dishes": ["Ierse oesters", "Sashimi van corvina met ponzu", "Steak tartaar van hert", "Geroosterde spitskool met gochujang", "Fazant in serranoham", "Tiramisu van sinaasappel (vegan)"], "price": "Hoofdgerecht €29,95 – €39,50 · 3-gangen surprisemenu €52,50", "veg": true, "checked": "november 2026"}, photos: ["https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d1/Leiden_Kloksteeg_23_en_25.JPG/960px-Leiden_Kloksteeg_23_en_25.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail"], photoCredit: "Leiden Kloksteeg 23 en 25.JPG", website: 'https://www.prentenkabinet.nl/' },
-    { id: 'r-annies', name: "Annie's", lat: 52.15948, lon: 4.49123, address: 'Hoogstraat 1A', cuisine: 'Café-restaurant', meal: 'beide', text: 'Legendarisch terras op vlonders op het water, bij de samenloop van Oude en Nieuwe Rijn.', menu: {"url": "https://annies.nu/nl/menukaart", "dishes": [], "note": "Lunch, diner, borrel en gebak; veel gerechten om te delen. Drijvend terras en sfeervolle werfkelders.", "checked": "november 2026"}, website: 'https://annies.nu/' },
-    { id: 'r-cityhall', name: 'City Hall', lat: 52.15793, lon: 4.49103, address: 'Stadhuisplein 3', cuisine: 'Italiaans', meal: 'beide', text: 'Italiaanse trattoria in het historische stadhuis van Leiden.', kids: true, menu: {"url": "https://restaurantcityhall.nl/", "dishes": ["Arancini", "Vitello tonnato", "Burrata", "Pizza margherita", "Linguine gamberi e cozze", "Menu di selezione (3 gangen)"], "price": "Pizza €13 – €16 · pasta €17,50 – €19,50 · hoofdgerecht €22,50 · lunch 12–16 uur", "veg": true, "checked": "november 2026"}, website: 'https://restaurantcityhall.nl/' },
-    { id: 'r-oudtleyden', name: 'Oudt Leyden', lat: 52.16223, lon: 4.48457, address: 'Steenstraat 49', cuisine: 'Pannenkoeken', meal: 'lunch', text: 'Klassiek pannenkoekenhuis in Oudhollandse stijl. Perfect voor lunch of met kinderen.', kids: true, menu: {"url": "https://oudtleyden.nl/", "dishes": ["Pannenkoeken, van traditioneel tot bijzonder", "Leidsche mosterdsoep", "Lasagne met paddenstoelen (v)", "Kippendijen van de grill", "Zalmfilet met kruidenkorst"], "price": "Hoofdgerecht €18,50 – €22,50", "veg": true, "checked": "november 2026"}, photos: ["https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4f/Leiden_-_Steenstraat_51_-_49_-_47.jpg/960px-Leiden_-_Steenstraat_51_-_49_-_47.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail"], photoCredit: "Leiden - Steenstraat 51 - 49 - 47.jpg", website: 'https://oudtleyden.nl/' },
-    { id: 'r-schaapsbel', name: 'Pannenkoekenhuis De Schaapsbel', lat: 52.16286, lon: 4.48525, address: 'Beestenmarkt 7', cuisine: 'Pannenkoeken', meal: 'lunch', text: 'Pannenkoeken en Hollandse kost aan de Beestenmarkt.', kids: true, photos: ["https://thumb.wikimedia.org/wikipedia/commons/thumb/6/66/Beestenmarkt_7.JPG/960px-Beestenmarkt_7.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail"], photoCredit: "Beestenmarkt 7.JPG", website: 'http://www.schaapsbel.nl' },
-    { id: 'r-vanderwerff', name: 'Stadscafé Van der Werff', lat: 52.16385, lon: 4.48478, address: 'Steenstraat 2', cuisine: 'Grand café', meal: 'beide', text: 'Ruim grand café met terras op de hoek van de Steenstraat; prima voor lunch of een borrel.', kids: true, photos: ["https://thumb.wikimedia.org/wikipedia/commons/thumb/5/57/Leiden_-_2e_Binnenvestgracht_21_-_Steenstraat_2.jpg/960px-Leiden_-_2e_Binnenvestgracht_21_-_Steenstraat_2.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail"], photoCredit: "Leiden - 2e Binnenvestgracht 21 - Steenstraat 2.jpg" },
-    { id: 'r-pakhuis', name: 'Grand Café Pakhuis', lat: 52.15787, lon: 4.48429, address: 'Doelensteeg 8', cuisine: 'Hollands', meal: 'beide', text: 'Grand café in een oud pakhuis vlak bij de Hortus en het Rapenburg.', kids: true, menu: {"url": "https://www.pakhuisleiden.nl/", "dishes": ["Ontbijt (tot 13 uur)", "Franse uiensoep", "Uitsmijter", "Black Angus burger", "Warme geitenkaas (v)", "Caesarsalade"], "price": "Lunch €9 – €17", "veg": true, "kids": "Kinderprijs voor de lunchdeal (t/m 10 jaar)", "checked": "november 2026"}, website: 'https://www.pakhuisleiden.nl/' },
-    { id: 'r-beleg', name: 'Leidsch Beleg', lat: 52.16183, lon: 4.48576, address: 'Turfmarkt 12', cuisine: 'Broodjes & lunch', meal: 'lunch', text: 'Lunchroom en broodjeszaak met een terras aan de Turfmarkt.', menu: {"url": "https://www.leidschbeleg.nl/ons-menu/", "dishes": ["Meer dan 24 soorten beleg", "Keuze uit verschillende broodsoorten", "Vlees, vis en vega(n)"], "veg": true, "hours": "Ma–za 9–17 · zo 10–17", "checked": "november 2026"}, photos: ["https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d1/Leiden_-_Turfmarkt_12.jpg/960px-Leiden_-_Turfmarkt_12.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail"], photoCredit: "Leiden - Turfmarkt 12.jpg", website: 'https://www.leidschbeleg.nl/' },
+    { id: 'r-annies', allround: true, name: "Annie's", lat: 52.15948, lon: 4.49123, address: 'Hoogstraat 1A', cuisine: 'Café-restaurant', meal: 'beide', text: 'Legendarisch terras op vlonders op het water, bij de samenloop van Oude en Nieuwe Rijn.', menu: {"url": "https://annies.nu/nl/menukaart", "dishes": [], "note": "Lunch, diner, borrel en gebak; veel gerechten om te delen. Drijvend terras en sfeervolle werfkelders.", "checked": "november 2026"}, website: 'https://annies.nu/' },
+    { id: 'r-cityhall', allround: true, name: 'City Hall', lat: 52.15793, lon: 4.49103, address: 'Stadhuisplein 3', cuisine: 'Italiaans', meal: 'beide', text: 'Italiaanse trattoria in het historische stadhuis van Leiden.', kids: true, menu: {"url": "https://restaurantcityhall.nl/", "dishes": ["Arancini", "Vitello tonnato", "Burrata", "Pizza margherita", "Linguine gamberi e cozze", "Menu di selezione (3 gangen)"], "price": "Pizza €13 – €16 · pasta €17,50 – €19,50 · hoofdgerecht €22,50 · lunch 12–16 uur", "veg": true, "checked": "november 2026"}, website: 'https://restaurantcityhall.nl/' },
+    { id: 'r-oudtleyden', allround: true, name: 'Oudt Leyden', lat: 52.16223, lon: 4.48457, address: 'Steenstraat 49', cuisine: 'Pannenkoeken', meal: 'lunch', text: 'Klassiek pannenkoekenhuis in Oudhollandse stijl. Perfect voor lunch of met kinderen.', kids: true, menu: {"url": "https://oudtleyden.nl/", "dishes": ["Pannenkoeken, van traditioneel tot bijzonder", "Leidsche mosterdsoep", "Lasagne met paddenstoelen (v)", "Kippendijen van de grill", "Zalmfilet met kruidenkorst"], "price": "Hoofdgerecht €18,50 – €22,50", "veg": true, "checked": "november 2026"}, photos: ["https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4f/Leiden_-_Steenstraat_51_-_49_-_47.jpg/960px-Leiden_-_Steenstraat_51_-_49_-_47.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail"], photoCredit: "Leiden - Steenstraat 51 - 49 - 47.jpg", website: 'https://oudtleyden.nl/' },
+    { id: 'r-schaapsbel', allround: true, name: 'Pannenkoekenhuis De Schaapsbel', lat: 52.16286, lon: 4.48525, address: 'Beestenmarkt 7', cuisine: 'Pannenkoeken', meal: 'lunch', text: 'Pannenkoeken en Hollandse kost aan de Beestenmarkt.', kids: true, photos: ["https://thumb.wikimedia.org/wikipedia/commons/thumb/6/66/Beestenmarkt_7.JPG/960px-Beestenmarkt_7.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail"], photoCredit: "Beestenmarkt 7.JPG", website: 'http://www.schaapsbel.nl' },
+    { id: 'r-vanderwerff', allround: true, name: 'Stadscafé Van der Werff', lat: 52.16385, lon: 4.48478, address: 'Steenstraat 2', cuisine: 'Grand café', meal: 'beide', text: 'Ruim grand café met terras op de hoek van de Steenstraat; prima voor lunch of een borrel.', kids: true, photos: ["https://thumb.wikimedia.org/wikipedia/commons/thumb/5/57/Leiden_-_2e_Binnenvestgracht_21_-_Steenstraat_2.jpg/960px-Leiden_-_2e_Binnenvestgracht_21_-_Steenstraat_2.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail"], photoCredit: "Leiden - 2e Binnenvestgracht 21 - Steenstraat 2.jpg" },
+    { id: 'r-pakhuis', allround: true, name: 'Grand Café Pakhuis', lat: 52.15787, lon: 4.48429, address: 'Doelensteeg 8', cuisine: 'Hollands', meal: 'beide', text: 'Grand café in een oud pakhuis vlak bij de Hortus en het Rapenburg.', kids: true, menu: {"url": "https://www.pakhuisleiden.nl/", "dishes": ["Ontbijt (tot 13 uur)", "Franse uiensoep", "Uitsmijter", "Black Angus burger", "Warme geitenkaas (v)", "Caesarsalade"], "price": "Lunch €9 – €17", "veg": true, "kids": "Kinderprijs voor de lunchdeal (t/m 10 jaar)", "checked": "november 2026"}, website: 'https://www.pakhuisleiden.nl/' },
+    { id: 'r-beleg', allround: true, name: 'Leidsch Beleg', lat: 52.16183, lon: 4.48576, address: 'Turfmarkt 12', cuisine: 'Broodjes & lunch', meal: 'lunch', text: 'Lunchroom en broodjeszaak met een terras aan de Turfmarkt.', menu: {"url": "https://www.leidschbeleg.nl/ons-menu/", "dishes": ["Meer dan 24 soorten beleg", "Keuze uit verschillende broodsoorten", "Vlees, vis en vega(n)"], "veg": true, "hours": "Ma–za 9–17 · zo 10–17", "checked": "november 2026"}, photos: ["https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d1/Leiden_-_Turfmarkt_12.jpg/960px-Leiden_-_Turfmarkt_12.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail"], photoCredit: "Leiden - Turfmarkt 12.jpg", website: 'https://www.leidschbeleg.nl/' },
     { id: 'r-bordo', name: "Bistro Bord'o", lat: 52.16123, lon: 4.48563, address: 'Apothekersdijk 2-3', cuisine: 'Frans', meal: 'diner', text: 'Franse bistro aan de Apothekersdijk.', menu: {"url": "https://www.bistrobordo.nl/diner/", "dishes": [], "veg": true, "note": "Franse bistro met een seizoensmenu en een vegetarisch menu.", "hours": "Di t/m za diner vanaf 18:00 · lunch op aanvraag", "checked": "november 2026"}, website: 'https://www.bistrobordo.nl' },
     { id: 'r-puur', name: 'Puur', lat: 52.15815, lon: 4.48916, address: 'Pieterskerk-Choorsteeg', cuisine: 'Modern', meal: 'diner', text: 'Restaurant in een steegje achter de Pieterskerk.', menu: {"url": "https://puurleiden.nl/menu/", "dishes": ["Bietentartaar (v)", "Risotto met truffel-beurre blanc (v)", "Lende biefstuk met groene peper", "Heilbot met citroen-beurre blanc", "Vegetarische rendang (v)"], "price": "Hoofdgerecht €25,50 – €26,50 · chef’s menu 3–6 gangen €39,50 – €63,50", "veg": true, "checked": "november 2026"}, website: 'https://puurleiden.nl/' },
-    { id: 'r-labota', name: 'La Bota', lat: 52.15710, lon: 4.48798, address: 'Herensteeg', cuisine: 'Eetcafé', meal: 'beide', text: 'Ongedwongen eetcafé bij de Pieterskerk, geliefd bij studenten.', website: 'https://www.labota.nl/' },
+    { id: 'r-labota', allround: true, name: 'La Bota', lat: 52.15710, lon: 4.48798, address: 'Herensteeg', cuisine: 'Eetcafé', meal: 'beide', text: 'Ongedwongen eetcafé bij de Pieterskerk, geliefd bij studenten.', website: 'https://www.labota.nl/' },
     { id: 'r-fust', name: "'t Fust", lat: 52.15473, lon: 4.49274, address: 'Raamsteeg', cuisine: 'Eetcafé', meal: 'diner', text: 'Gezellig eetcafé in een zijstraatje van de Breestraat.', menu: {"url": "https://fustleiden.nl/", "dishes": ["Paling van Eveleens", "Uiensoep met gruyère", "Kaasfondue", "Saté van kippendijen", "Runder-ribeye", "Duo van ree"], "price": "Hoofdgerecht €21 – €36", "veg": true, "hours": "Di t/m zo vanaf 17:00", "checked": "november 2026"}, website: 'https://fustleiden.nl/' },
     { id: 'r-scarlatti', name: 'Scarlatti', lat: 52.15998, lon: 4.49108, address: 'Stille Mare 4', cuisine: 'Italiaans', meal: 'diner', text: 'Italiaans restaurant op een rustig plekje vlak bij de Nieuwe Rijn.', menu: {"url": "https://scarlatti-leiden.nl/diner/", "dishes": ["Flammkuchen met pompoen", "Gamba’s à la Ricard", "Kaasfondue (september – april)", "Halve kip sous-vide", "Steak Scarlatti"], "price": "Hoofdgerecht €21,50 – €27,50 · kaasfondue €23,50 p.p.", "veg": true, "hours": "Diner vanaf 17:00", "checked": "november 2026"}, photos: ["https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9c/Leiden_-_Stille_Mare_4.jpg/960px-Leiden_-_Stille_Mare_4.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail"], photoCredit: "Leiden - Stille Mare 4.jpg", website: 'https://scarlatti-leiden.nl/' },
     { id: 'r-karalis', name: 'Karalis', lat: 52.15489, lon: 4.48905, address: 'Molensteeg', cuisine: 'Italiaans', meal: 'diner', text: 'Italiaans (Sardijns) restaurant in het centrum.', menu: {"url": "https://karalis.nl/", "dishes": ["Melanzane alla parmigiana", "Vitello tonnato", "Culurgiones (Sardijnse ravioli)", "Pizza burrata, pesto & zalm", "Linguine allo scoglio", "Sebadas"], "price": "Pizza €17,25 – €19,25 · pasta €18,25 – €19,75", "veg": true, "hours": "Ma dicht · di–zo diner · za en zo ook lunch", "checked": "november 2026"}, website: 'https://karalis.nl/' },
     { id: 'r-ragu', name: 'Ragù', lat: 52.15613, lon: 4.49470, address: 'Watersteeg 2A', cuisine: 'Italiaans', meal: 'diner', text: 'Italiaanse keuken aan de oostkant van de Breestraat.', menu: {"url": "https://www.raguleiden.com/menu", "dishes": ["Bruschetta met burrataroom", "Parmigiana di melanzane", "Pizza margherita", "Pizza diavola", "Pizza capricciosa"], "price": "Pizza vanaf €12,99", "veg": true, "checked": "november 2026"}, website: 'https://www.raguleiden.com/' },
     { id: 'r-surakarta', name: 'Surakarta', lat: 52.16016, lon: 4.48448, address: 'Noordeinde 53', cuisine: 'Indonesisch', meal: 'diner', text: 'Javaanse keuken; ga voor de rijsttafel.', photos: ["https://thumb.wikimedia.org/wikipedia/commons/thumb/3/33/Leiden_-_Noordeinde_53.JPG/960px-Leiden_-_Noordeinde_53.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail"], photoCredit: "Leiden - Noordeinde 53.JPG", website: 'https://www.surakarta.nl/' },
     { id: 'r-sumatra', name: 'Sumatra House', lat: 52.16312, lon: 4.48622, address: 'Nieuwe Beestenmarkt 3', cuisine: 'Indonesisch', meal: 'diner', text: 'Indonesisch restaurant bij de Beestenmarkt.', menu: {"url": "https://sumatrahouse.com/menukaart-nederlands/", "dishes": ["Soto ajam", "Loempia", "Nasi goreng Medan", "Gulai kambing (geit in kerrie)", "Saté campur"], "price": "Hoofdgerecht €22 – €27", "checked": "november 2026"}, photos: ["https://thumb.wikimedia.org/wikipedia/commons/thumb/0/02/Leiden_-_Nieuwe_Beestenmarkt_3.jpg/960px-Leiden_-_Nieuwe_Beestenmarkt_3.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail"], photoCredit: "Leiden - Nieuwe Beestenmarkt 3.jpg", website: 'https://sumatrahouse.com/' },
-    { id: 'r-poort', name: 'Brasserie de Poort', lat: 52.16153, lon: 4.50417, address: 'Zijlpoortsburg', cuisine: 'Vis', meal: 'beide', text: 'Brasserie naast de Zijlpoort, met terras aan het water.', menu: {"url": "https://poort.nl/menukaart/", "dishes": [], "note": "Koffie met huisgemaakte taart, en voor lunch, borrel en diner gerechtjes om te delen: vis, vlees en vegetarisch.", "veg": true, "checked": "november 2026"}, website: 'https://poort.nl/' },
+    { id: 'r-poort', allround: true, name: 'Brasserie de Poort', lat: 52.16153, lon: 4.50417, address: 'Zijlpoortsburg', cuisine: 'Vis', meal: 'beide', text: 'Brasserie naast de Zijlpoort, met terras aan het water.', menu: {"url": "https://poort.nl/menukaart/", "dishes": [], "note": "Koffie met huisgemaakte taart, en voor lunch, borrel en diner gerechtjes om te delen: vis, vlees en vegetarisch.", "veg": true, "checked": "november 2026"}, website: 'https://poort.nl/' },
     { id: 'r-djebena', name: 'Djebena', lat: 52.16010, lon: 4.48284, address: 'Noordeinde 21', cuisine: 'Ethiopisch', meal: 'diner', text: 'Oost-Afrikaanse gerechten om te delen, gegeten met injera.', menu: {"url": "https://djebena.nl/oost-afrikaanse-gerechten-restaurant-menu/", "dishes": ["Linzensoep", "Zigni", "Tebsi", "Shuro (v)", "Combinatie van 4 gerechten"], "price": "Hoofdgerecht €18,50 – €21,50", "veg": true, "note": "Alle gerechten met injera, het Eritrese zuurdesempannenkoekje.", "checked": "november 2026"}, photos: ["https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b8/Leiden_-_Noordeinde_21.jpg/960px-Leiden_-_Noordeinde_21.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail"], photoCredit: "Leiden - Noordeinde 21.jpg", website: 'https://djebena.nl/' },
     { id: 'r-rodos', name: 'Rodos Good Taste', lat: 52.16223, lon: 4.48592, address: 'Turfmarkt 5', cuisine: 'Grieks', meal: 'diner', text: 'Grieks restaurant aan de Turfmarkt.', website: 'https://rodosgoodtaste.nl/' },
     { id: 'r-justmeet', name: 'Just Meet', lat: 52.16014, lon: 4.48608, address: 'Breestraat 18', cuisine: 'Steakhouse', meal: 'diner', text: 'Vlees van de grill aan het begin van de Breestraat.', menu: {"url": "https://www.just-meet.nl/menukaart/", "dishes": ["Steak tartaar", "Radicchio met hummus", "The Burger", "Flank steak (bavette)", "Longhaas", "Surf & turf"], "price": "Burger €18,50 · steaks €26,50 – €36,50", "checked": "november 2026"}, photos: ["https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bd/Leiden_-_Breestraat_18.jpg/960px-Leiden_-_Breestraat_18.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail"], photoCredit: "Leiden - Breestraat 18.jpg", website: 'https://www.just-meet.nl/' },

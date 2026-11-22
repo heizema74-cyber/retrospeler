@@ -15,12 +15,21 @@ const TEMPO = { rustig: { n: 3, start: '10:00' }, normaal: { n: 4, start: '09:30
 
 const isWet = (w) => (w?.pop ?? 0) >= 60 || weatherInfo(w?.code).wet;
 
-function score(s, date, w, prefs, fam) {
+function score(s, date, w, prefs, fam, ctx = {}) {
   const day = parseISO(date).getDay();
   const month = parseISO(date).getMonth() + 1;
   if (s.closed?.includes(day)) return -999;
   if (s.season && !s.season.includes(month)) return -999;
   let sc = (s.prio || 2) * 2;
+  // jullie favorieten (hartje) krijgen voorrang
+  if (ctx.favs?.has(s.id)) sc += 6;
+  // optioneel: liefst gratis
+  if (prefs.free) sc += s.fee === 'entree' ? -4 : s.fee === 'gratis' || s.fee === 'buiten' ? 2 : 0;
+  // 'in de omgeving' (verder dan ±2 km van het centrum) alleen als er tijd over is
+  if (ctx.center && s.cat !== 'dagtrip') {
+    const km = s.km ?? distKm(ctx.center, s);
+    if (km > 2) sc -= (km - 2) * (s.cat === 'natuur' ? 1 : 3);
+  }
   const i = prefs.interests || [];
   if (i.includes('cultuur') && (s.cat === 'museum' || s.cat === 'historisch')) sc += 2;
   if (i.includes('natuur') && (s.cat === 'natuur' || s.cat === 'dagtrip')) sc += 2.5;
@@ -32,6 +41,24 @@ function score(s, date, w, prefs, fam) {
   if (isWet(w)) sc += s.indoor ? 3 : -4;
   else if (!s.indoor && (w?.tmax ?? 15) >= 14) sc += 1.5;
   return sc;
+}
+
+// Kies een plek om te eten: lunch liefst bij een grand café, eetcafé, brasserie of lunchroom;
+// diner bij een echt restaurant. Favorieten eerst, en niet te ver lopen.
+function pickFood(list, from, used, meal, { fam, favs } = {}) {
+  let best = null, bs = -Infinity;
+  for (const r of list) {
+    if (used.has(r.id)) continue;
+    if (meal === 'lunch' ? r.meal === 'diner' : r.meal === 'lunch') continue;
+    if (fam && /fine dining/i.test(r.cuisine || '')) continue;
+    let sc = -distKm(from, r) * (meal === 'lunch' ? 2.5 : 1.5);
+    if (favs?.has(r.id)) sc += 5;
+    if (fam && r.kids) sc += 3;
+    if (meal === 'lunch') sc += (r.allround ? 3 : 0) + (r.meal === 'lunch' ? 1 : 0);
+    else sc += (r.meal === 'diner' ? 1 : 0) - (r.allround && !fam ? 0.5 : 0);
+    if (sc > bs) { bs = sc; best = r; }
+  }
+  return best;
 }
 
 function nearest(list, from, used, filter) {
@@ -62,7 +89,9 @@ export function makePlan(trip, allSights, restaurants = [], weather = []) {
   const usedPlay = new Set();
   const city = trip.city;
   const W = (d) => weather.find((w) => w.date === d);
-  const kidFood = (r) => !fam || r.kids;
+  const favs = new Set(Object.keys(trip.favorites || {}));
+  const ctx = { favs, center: { lat: city.lat, lon: city.lon } };
+  const food = (meal, from) => pickFood(restaurants, from, usedFood, meal, { fam, favs });
 
   // Dagtrip: alleen bij 3+ dagen, op de beste (droogste) middelste dag.
   let tripDay = null, dayTrip = null;
@@ -71,7 +100,7 @@ export function makePlan(trip, allSights, restaurants = [], weather = []) {
     const options = sights.filter((s) => s.cat === 'dagtrip');
     let best = -Infinity;
     for (const d of middle) for (const s of options) {
-      const sc = score(s, d, W(d), prefs, fam) - ((W(d)?.pop ?? 30) / 20);
+      const sc = score(s, d, W(d), prefs, fam, ctx) - ((W(d)?.pop ?? 30) / 20);
       if (sc > best && sc >= 9) { best = sc; tripDay = d; dayTrip = s; }
     }
     if (dayTrip) used.add(dayTrip.id);
@@ -93,8 +122,7 @@ export function makePlan(trip, allSights, restaurants = [], weather = []) {
     }
 
     const lunch = () => {
-      const r = nearest(restaurants, pos, usedFood, (x) => x.meal !== 'diner' && kidFood(x))
-        || nearest(restaurants, pos, usedFood, (x) => x.meal !== 'diner');
+      const r = food('lunch', pos);
       t = Math.max(t, toMin(young ? '12:00' : '12:30'));
       if (r) { usedFood.add(r.id); add(t, { kind: 'food', refId: r.id, title: `Lunch bij ${r.name}`, lat: r.lat, lon: r.lon, sub: r.cuisine }); }
       else add(t, { kind: 'custom', icon: 'coffee', title: 'Lunch in de buurt' });
@@ -125,41 +153,75 @@ export function makePlan(trip, allSights, restaurants = [], weather = []) {
       lunched = true;
     } else {
       const n = first || last ? Math.max(2, tempo.n - 1) : tempo.n;
-      let count = 0;
+      let count = 0, picked = 0;
       while (count < n && t < end) {
         if (!lunched && t >= toMin(young ? '11:45' : '12:00')) lunch();
         if (fam && lunched && !played && count >= 2) playBreak();
         let best = null, bs = -Infinity;
         for (const s of sights) {
           if (used.has(s.id) || s.cat === 'dagtrip') continue;
-          const sc = score(s, date, W(date), prefs, fam) - (count === 0 && !first ? 0 : distKm(pos, s) * (fam ? 2 : 3));
+          if ((s.km ?? distKm(ctx.center, s)) > (s.cat === 'natuur' ? 3 : 2)) continue; // verder weg: zie 'tocht door de omgeving'
+          const sc = score(s, date, W(date), prefs, fam, ctx) - (picked === 0 && !first ? 0 : distKm(pos, s) * (fam ? 2 : 3));
           if (sc > bs) { bs = sc; best = s; }
         }
         if (!best || bs < -100) break;
-        const walk = count === 0 && !first ? 0 : walkMin(distKm(pos, best));
+        const walk = picked === 0 && !first ? 0 : walkMin(distKm(pos, best));
         if (t + walk + best.dur > end + 30) break;
         t += walk;
         used.add(best.id);
-        add(t, { kind: 'sight', refId: best.id, title: best.name, lat: best.lat, lon: best.lon, sub: best.short || '', note: best.tip || '', walk });
+        const short = best.walkby || best.dur <= 25;
+        add(t, { kind: 'sight', refId: best.id, title: short ? `Even langs: ${best.name}` : best.name, lat: best.lat, lon: best.lon, sub: best.short || '', note: best.tip || (short ? 'Kort bekijken onderweg.' : ''), walk });
         t += best.dur + 10;
         pos = best;
-        count++;
+        picked++;
+        // korte stops onderweg tellen maar half mee
+        count += short ? 0.5 : 1;
+      }
+      // Alles al gezien (kleine stad)? Dan een vrije ochtend in plaats van een lege planning.
+      if (picked === 0 && !first) {
+        add(t, { kind: 'custom', icon: 'sun', title: wet ? 'Rustige ochtend' : 'Vrije ochtend', note: wet ? 'Uitslapen, ontbijten en een kop koffie in een café.' : 'Rondkijken in de winkelstraatjes, een terrasje, of nog eens langs jullie favoriete plek.' });
+        t = Math.max(t + 150, toMin('12:00'));
       }
       if (!lunched && t <= toMin('14:30')) lunch();
       if (!last || t < toMin('14:45')) playBreak();
+      // Tijd over en droog? Een fiets- of autotocht langs plekken in de omgeving.
+      if (!last && !wet && !fam && t <= end - 100) {
+        const far = sights.filter((s) => !used.has(s.id) && s.cat !== 'dagtrip' && (s.km ?? distKm(ctx.center, s)) > 2 && score(s, date, W(date), prefs, fam, ctx) > -100);
+        if (far.length >= 2) {
+          const stops = [];
+          let at = ctx.center;
+          while (stops.length < 4 && far.length) {
+            far.sort((a, b) => distKm(at, a) - distKm(at, b));
+            const s = far.shift();
+            if (stops.length && distKm(at, s) > 4) break;
+            stops.push(s); at = s;
+          }
+          if (stops.length >= 2) {
+            stops.forEach((s) => used.add(s.id));
+            t += 10;
+            add(t, {
+              kind: 'tour', icon: 'route', title: 'Fietstocht door de omgeving',
+              sub: `${stops.length} plekken, ±${Math.round(stops.reduce((km, s, k) => km + distKm(k ? stops[k - 1] : ctx.center, s), distKm(stops[stops.length - 1], ctx.center)))} km heen en terug`,
+              note: 'Huur een fiets, of ga met de auto.', lat: stops[0].lat, lon: stops[0].lon,
+              stops: stops.map((s) => ({ id: s.id, name: s.name, lat: s.lat, lon: s.lon, km: s.km })),
+            });
+            t += 150;
+          }
+        }
+      }
     }
+    mergeWalkbys(items);
 
     if (last) {
       add(Math.max(t, toMin('15:30')), { kind: 'custom', icon: 'suitcase', title: 'Vertrek', note: 'Nog tijd over? Een laatste stroopwafel voor onderweg.' });
     } else if (fam) {
       add(Math.max(t, toMin('16:15')), { kind: 'custom', icon: 'coffee', title: 'Even bijkomen in het hotel' });
-      const r = nearest(restaurants, pos, usedFood, (x) => x.meal !== 'lunch' && x.kids)
-        || nearest(restaurants, pos, usedFood, (x) => x.meal !== 'lunch' && !/fine dining/i.test(x.cuisine || ''));
+      const r = food('diner', pos);
       if (r) { usedFood.add(r.id); add(toMin('17:30'), { kind: 'food', refId: r.id, title: `Vroeg eten bij ${r.name}`, lat: r.lat, lon: r.lon, sub: r.cuisine }); }
       else add(toMin('17:30'), { kind: 'custom', icon: 'food', title: 'Vroeg eten' });
     } else {
       add(Math.max(t, toMin('17:00')), { kind: 'custom', icon: wet ? 'coffee' : 'sun', title: wet ? 'Vrije tijd / even bijkomen' : 'Vrije tijd / terras of shoppen' });
-      const r = nearest(restaurants, pos, usedFood, (x) => x.meal !== 'lunch');
+      const r = food('diner', pos);
       if (r) { usedFood.add(r.id); add(toMin('19:00'), { kind: 'food', refId: r.id, title: `Diner bij ${r.name}`, lat: r.lat, lon: r.lon, sub: r.cuisine }); }
       else add(toMin('19:00'), { kind: 'custom', icon: 'food', title: 'Diner' });
     }
@@ -167,6 +229,23 @@ export function makePlan(trip, allSights, restaurants = [], weather = []) {
   });
 
   return { generatedAt: Date.now(), days };
+}
+
+// Twee of meer korte stops achter elkaar → één stadswandeling, met elke plek als link.
+function mergeWalkbys(items) {
+  for (let k = 0; k < items.length; k++) {
+    if (!/^Even langs: /.test(items[k].title)) continue;
+    let e = k;
+    while (e + 1 < items.length && /^Even langs: /.test(items[e + 1].title)) e++;
+    if (e > k) {
+      const group = items.slice(k, e + 1);
+      items.splice(k, group.length, {
+        ...group[0], kind: 'tour', icon: 'walk', refId: null, title: 'Stadswandeling',
+        sub: `Langs ${group.length} plekken, ±${group.length * 20 + 15} minuten`, note: 'Kort bekijken onderweg; gratis van buiten.',
+        stops: group.map((g) => ({ id: g.refId, name: g.title.replace(/^Even langs: /, ''), lat: g.lat, lon: g.lon })),
+      });
+    }
+  }
 }
 
 export function sortItems(day) {
@@ -220,8 +299,24 @@ export function explainDay(trip, day, index, total, weather, placeById) {
     if (items.some((i) => /vroeg eten/i.test(i.title))) parts.push('vroeg eten op een kindvriendelijke plek');
     why.push({ icon: 'baby', text: `Met kinderen van ${fam.label}: ${parts.join(', ')}.` });
   }
-  const food = items.filter((i) => i.kind === 'food');
-  if (food.length) why.push({ icon: 'food', text: `Eten in de buurt van waar jullie dan zijn: ${food.map((f) => f.title.replace(/^(Lunch|Diner|Vroeg eten) bij /, '')).join(' en ')}.` });
+  for (const tr of items.filter((i) => i.kind === 'tour')) {
+    if (tr.icon === 'route') why.push({ icon: 'route', text: `Droog weer en tijd over: een fietstocht langs plekken in de omgeving (${tr.stops.map((s) => s.name).join(', ')}).` });
+    else why.push({ icon: 'walk', text: `Korte, gratis stops samengevoegd tot een stadswandeling: ${tr.stops.map((s) => s.name).join(', ')}.` });
+  }
+  const favs = trip.favorites || {};
+  const favIn = items.filter((i) => i.refId && favs[i.refId]);
+  if (favIn.length) why.push({ icon: 'heart', text: `Jullie favorieten staan erin: ${favIn.map((i) => placeById(i.refId)?.name || i.title).join(', ')}.` });
+  const free = sights.filter((s) => s.fee === 'gratis' || s.fee === 'buiten');
+  const paid = sights.filter((s) => s.fee === 'entree');
+  if (trip.prefs?.free && free.length) why.push({ icon: 'ticket', text: `Jullie kozen voor liefst gratis uitjes: ${free.map((s) => s.name).join(', ')}.` });
+  else if (paid.length && free.length) why.push({ icon: 'ticket', text: `Met entree: ${paid.map((s) => s.name).join(', ')}. Gratis: ${free.map((s) => s.name).join(', ')}.` });
+  const lunchI = items.find((i) => i.kind === 'food' && /^Lunch/.test(i.title));
+  const dinnerI = items.find((i) => i.kind === 'food' && !/^Lunch/.test(i.title));
+  const nm = (i) => placeById(i.refId)?.name || i.title.replace(/^(Lunch|Diner|Vroeg eten) bij /, '');
+  const parts = [];
+  if (lunchI) parts.push(`lunch bij ${nm(lunchI)}${placeById(lunchI.refId)?.allround ? ' (een all-round zaak, fijn voor een lunch)' : ''}`);
+  if (dinnerI) parts.push(`${/^Vroeg/.test(dinnerI.title) ? 'vroeg eten' : 'diner'} bij ${nm(dinnerI)}`);
+  if (parts.length) why.push({ icon: 'food', text: `${parts.join(', ')[0].toUpperCase() + parts.join(', ').slice(1)}: dicht bij waar jullie dan zijn. Liever ergens anders? Tik op het potlood om te wisselen.` });
 
   const what = sights.length ? `${sights.length === 1 ? 'Eén hoogtepunt' : sights.length + ' hoogtepunten'}: ${sights.map((s) => s.name).join(', ')}.` : 'Een rustige dag zonder vaste bezienswaardigheden.';
   return { title, what, why };

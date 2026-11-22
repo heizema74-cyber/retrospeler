@@ -640,3 +640,19 @@ details[open] > summary > .ic:last-child { transform: rotate(180deg); }
 .tl-arrow { width: 14px !important; height: 14px !important; vertical-align: -2px; color: var(--accent); }
 button.tl-go { border: 0; background: transparent; border-radius: 8px; cursor: pointer; padding: 8px; margin: -4px -4px 0 0; }
 button.tl-go:hover { background: var(--line-2); color: var(--ink); }
+
+/* ---------------- gratis / entree & omgeving ---------------- */
+.fee { display: inline-block; margin-left: 4px; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; vertical-align: 1px; }
+.fee.free { background: var(--accent-soft); color: var(--accent-2); }
+.fee.paid { background: #F3EEE4; color: var(--ink-2); }
+.fee-chip { font-weight: 500; }
+.dchips .fee-chip.free { color: var(--accent-2); }
+.list-h { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; font: 600 22px var(--serif); margin: 14px 0 0; }
+.list-h .ic { color: var(--accent); align-self: center; }
+.list-h small { font: 400 12.5px var(--sans); color: var(--muted); }
+.k-tour .dot { background: #E6EEF0; color: #3F6C74; }
+.stops { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.stops a { font-size: 12.5px; padding: 3px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-2); font-weight: 500; }
+.stops small { color: var(--muted); font-weight: 400; }
+.tour-link { display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; font-size: 12.5px; color: var(--accent); font-weight: 500; }
+.tour-link .ic { width: 14px; height: 14px; }

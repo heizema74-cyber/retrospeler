@@ -67,13 +67,13 @@ export const gmaps = {
     return `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${p.lat},${p.lon}`;
   },
   // Een hele dagroute: begin, eindpunt en maximaal 8 tussenstops.
-  day(points) {
+  day(points, mode = 'walking') {
     const pts = points.filter((p) => p.lat);
     if (pts.length < 2) return pts[0] ? gmaps.route(pts[0]) : null;
     const ll = (p) => `${p.lat},${p.lon}`;
     const mid = pts.slice(1, -1).slice(0, 8).map(ll).join('|');
     return `https://www.google.com/maps/dir/?api=1&origin=${ll(pts[0])}&destination=${ll(pts[pts.length - 1])}` +
-      (mid ? `&waypoints=${enc(mid)}` : '') + '&travelmode=walking';
+      (mid ? `&waypoints=${enc(mid)}` : '') + `&travelmode=${mode}`;
   },
 };
 
@@ -133,10 +133,24 @@ export function weatherInfo(code) {
 }
 
 export function currentWeather(lat, lon) {
-  return cached(`now.${lat.toFixed(2)},${lon.toFixed(2)}`, 30 * 60e3, async () => {
-    const j = await getJSON(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,wind_speed_10m&timezone=auto`);
-    return { temp: j.current.temperature_2m, code: j.current.weather_code, wind: j.current.wind_speed_10m };
+  return cached(`now2.${lat.toFixed(2)},${lon.toFixed(2)}`, 30 * 60e3, async () => {
+    const j = await getJSON(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,wind_speed_10m,precipitation,cloud_cover&timezone=auto`);
+    const c = j.current;
+    let code = c.weather_code;
+    // "motregen" of "regen" terwijl er nu niets valt? Dan tonen we wat je ziet: zon of wolken.
+    if (code >= 51 && code <= 67 && !(c.precipitation > 0)) code = c.cloud_cover < 25 ? 0 : c.cloud_cover < 70 ? 2 : 3;
+    return { temp: c.temperature_2m, code, wind: c.wind_speed_10m };
   });
+}
+
+// De weerdienst geeft per dag het zwáárste weer (één uurtje motregen = "motregen").
+// Wij kijken naar wat je overdag echt merkt: hoeveel regen, hoe lang, en hoeveel zon.
+function dayCode(code, rain, hours, sun) {
+  const severe = code >= 71; // sneeuw of onweer: altijd laten zien
+  if (severe || rain >= 3 || hours >= 4) return code;
+  if (rain >= 1 || hours >= 2) return sun != null && sun >= 0.5 ? 2 : 80; // vooral droog met een buitje, of echt buiig
+  if (sun == null) return code >= 51 ? 3 : code;
+  return sun >= 0.6 ? 0 : sun >= 0.3 ? 2 : 3;
 }
 
 // Per reisdag: echte verwachting (tot 15 dagen vooruit) of anders het gemiddelde van
@@ -150,16 +164,19 @@ export async function tripWeather(trip) {
 
   const fc = dates.filter((d) => d >= today && d <= horizon);
   if (fc.length) {
-    const j = await cached(`fc.${lat.toFixed(2)},${lon.toFixed(2)}.${fc[0]}.${fc[fc.length - 1]}`, 60 * 60e3, () => getJSON(
+    const j = await cached(`fc2.${lat.toFixed(2)},${lon.toFixed(2)}.${fc[0]}.${fc[fc.length - 1]}`, 60 * 60e3, () => getJSON(
       `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&timezone=auto` +
-      `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,wind_speed_10m_max,sunrise,sunset` +
+      `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,precipitation_hours,sunshine_duration,daylight_duration,wind_speed_10m_max,sunrise,sunset` +
       `&start_date=${fc[0]}&end_date=${fc[fc.length - 1]}`));
-    j.daily.time.forEach((d, i) => {
+    const D = j.daily;
+    D.time.forEach((d, i) => {
+      const rain = D.precipitation_sum[i] ?? 0, hours = D.precipitation_hours?.[i] ?? 0;
+      const sun = D.daylight_duration?.[i] ? (D.sunshine_duration?.[i] ?? 0) / D.daylight_duration[i] : null;
       out[d] = {
-        date: d, source: 'verwachting', code: j.daily.weather_code[i],
-        tmax: j.daily.temperature_2m_max[i], tmin: j.daily.temperature_2m_min[i],
-        pop: j.daily.precipitation_probability_max[i], rain: j.daily.precipitation_sum[i],
-        wind: j.daily.wind_speed_10m_max[i], sunset: j.daily.sunset[i]?.slice(11),
+        date: d, source: 'verwachting', code: dayCode(D.weather_code[i], rain, hours, sun),
+        tmax: D.temperature_2m_max[i], tmin: D.temperature_2m_min[i],
+        pop: D.precipitation_probability_max[i], rain, rainHours: hours, sun: sun == null ? null : Math.round(sun * 100),
+        wind: D.wind_speed_10m_max[i], sunset: D.sunset[i]?.slice(11),
       };
     });
   }
@@ -204,14 +221,39 @@ export async function tripWeather(trip) {
 // ---------- Wikipedia: bezienswaardigheden in elke stad ----------
 const SKIP = /(straat|laan|weg\b|plein\b|station|halte|gemeente|plaats in|dorp|wijk|buurt|school|college|ziekenhuis|voetbal|stadion|bedrijf|spoorlijn|snelweg|rivier|kanaal|persoon|politicus|metro|tram|bus|kantoor|winkelcentrum|parkeer|begraafplaats|sporthal|zwembad|kazerne|fabriek|polder|waterschap|provincie|regio|street|road|square|railway|municipality|district|neighbourhood|village|school|hospital|football|company|person|bridge|brug)/i;
 
+// Inschatting voor steden zonder eigen gids. fee: 'gratis' | 'buiten' (gratis van buiten) | 'entree' | null (onbekend)
 export function guessCategory(text) {
   const t = (text || '').toLowerCase();
-  if (/museum|galerie|gallery/.test(t)) return { cat: 'museum', indoor: true, dur: 100 };
-  if (/kerk|kathedra|basiliek|kapel|synagoge|moskee|church|cathedral|basilica|chapel|abdij|klooster|abbey/.test(t)) return { cat: 'historisch', indoor: true, dur: 40 };
-  if (/park|tuin|bos|garden|meer|strand|beach|natuur|duin|lake|zoo|dierentuin/.test(t)) return { cat: 'natuur', indoor: false, dur: 75 };
-  if (/kasteel|burcht|slot|castle|paleis|palace|poort|gate|molen|mill|toren|tower|monument|fort|ruïne|ruin|wal|stadhuis|town hall/.test(t)) return { cat: 'historisch', indoor: false, dur: 40 };
-  if (/theater|schouwburg|opera|concert/.test(t)) return { cat: 'historisch', indoor: true, dur: 60 };
-  return { cat: 'historisch', indoor: false, dur: 45 };
+  if (/museum|galerie|gallery|planetarium|tentoonstelling/.test(t)) return { cat: 'museum', indoor: true, dur: 100, fee: 'entree' };
+  if (/kerk|kathedra|basiliek|kapel|synagoge|moskee|church|cathedral|basilica|chapel|abdij|klooster|abbey/.test(t)) return { cat: 'historisch', indoor: true, dur: 30, fee: null };
+  if (/park|tuin|bos|garden|meer|strand|beach|natuur|duin|lake/.test(t)) return { cat: 'natuur', indoor: false, dur: 60, fee: 'gratis' };
+  if (/zoo|dierentuin|pretpark|attractiepark/.test(t)) return { cat: 'natuur', indoor: false, dur: 150, fee: 'entree' };
+  if (/kasteel|burcht|slot|castle|paleis|palace/.test(t)) return { cat: 'historisch', indoor: false, dur: 60, fee: 'buiten' };
+  if (/theater|schouwburg|opera|concert/.test(t)) return { cat: 'historisch', indoor: true, dur: 45, fee: 'buiten' };
+  // poorten, molens, torens, waag, stadhuis, oude gebouwen: vooral even langslopen
+  return { cat: 'historisch', indoor: false, dur: 20, fee: 'buiten', walkby: true };
+}
+
+// Lunch, diner of allebei? Op basis van soort zaak, naam, keuken en (als bekend) openingstijden.
+export function inferMeal(t) {
+  const name = (t.name || '').toLowerCase();
+  const c = (t.cuisine || '').toLowerCase();
+  const allround = t.amenity === 'cafe' || /caf[eé]|brasserie|grand|eetcaf|herberg|lunch|bistro|pannenkoek|pancake|paviljoen|strandtent|bakker|koffie|coffee|tearoom|theehuis/.test(name)
+    || /regional|dutch|pancake|sandwich|breakfast|brunch|coffee_shop|cake|bakery/.test(c);
+  const dinnerCuisine = /chinese|indonesian|asian|indian|japanese|sushi|thai|vietnamese|korean|wok|steak|fine_dining|surinam|turkish|greek|argentinian|mexican|italian|pizza|spanish|tapas|lebanese|ethiopian|african|french/.test(c);
+  let meal = t.amenity === 'cafe' ? 'lunch' : allround ? 'beide' : 'diner';
+  if (dinnerCuisine && !allround) meal = 'diner';
+  // openingstijden, bv. "Tu-Su 16:00-22:00"
+  const oh = t.opening_hours || '';
+  const spans = [...oh.matchAll(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/g)].map((m) => [+m[1] * 60 + +m[2], +m[3] * 60 + +m[4]]);
+  if (spans.length) {
+    const lunchOk = spans.some(([a, b]) => a <= 12 * 60 + 30 && (b >= 13 * 60 + 30 || b < a));
+    const dinnerOk = spans.some(([a, b]) => b >= 20 * 60 || b < a);
+    if (lunchOk && !dinnerOk) meal = 'lunch';
+    else if (!lunchOk && dinnerOk) meal = 'diner';
+    else if (lunchOk && dinnerOk && allround) meal = 'beide';
+  }
+  return { meal, allround: !!allround };
 }
 
 // Officiële website (P856) en bekendheid (aantal Wikipedia-talen) uit Wikidata.
@@ -228,7 +270,7 @@ async function wikidataInfo(ids) {
 }
 
 export function wikiSights(lat, lon, lang = 'nl') {
-  return cached(`ws2.${lang}.${lat.toFixed(3)},${lon.toFixed(3)}`, 7 * 864e5, async () => {
+  return cached(`ws3.${lang}.${lat.toFixed(3)},${lon.toFixed(3)}`, 7 * 864e5, async () => {
     const url = `https://${lang}.wikipedia.org/w/api.php?action=query&format=json&formatversion=2&origin=*` +
       `&generator=geosearch&ggscoord=${lat}|${lon}&ggsradius=10000&ggslimit=80` +
       `&prop=pageimages|description|coordinates|pageprops&ppprop=wikibase_item&piprop=thumbnail&pithumbsize=960&colimit=max`;
@@ -245,9 +287,12 @@ export function wikiSights(lat, lon, lang = 'nl') {
     }).sort((a, b) => b.score - a.score);
     return ranked.slice(0, 40).map(({ p, info }, i) => {
       const g = guessCategory(`${p.title} ${p.description || ''}`);
+      // Hoe belangrijk? Bekendheid (aantal Wikipedia-talen), musea/attracties hoger, 'even langslopen' lager.
+      const fame = Math.log2((info.fame || 1) + 1);
+      const prio = Math.min(5, Math.max(1, Math.round(fame * 0.9 + (g.cat === 'museum' ? 1.5 : 0) + (info.website ? 0.5 : 0) - (g.walkby ? 1 : 0))));
       return {
         id: `w${lang}${p.pageid}`, name: p.title.replace(/\s*\(.*\)$/, ''), ...g,
-        prio: Math.max(1, 5 - Math.floor(i / 5)), lat: p.coordinates[0].lat, lon: p.coordinates[0].lon,
+        prio, lat: p.coordinates[0].lat, lon: p.coordinates[0].lon,
         short: p.description ? p.description[0].toUpperCase() + p.description.slice(1) : '',
         photos: [p.thumbnail.source], wiki: [lang, p.title], website: info.website || '', rank: i,
       };
@@ -293,7 +338,7 @@ async function overpass(query) {
 }
 
 export function osmPlaces(lat, lon, kind) {
-  return cached(`osm.${kind}.${lat.toFixed(3)},${lon.toFixed(3)}`, 7 * 864e5, async () => {
+  return cached(`osm2.${kind}.${lat.toFixed(3)},${lon.toFixed(3)}`, 7 * 864e5, async () => {
     const q = kind === 'hotel'
       ? `[out:json][timeout:25];nwr["tourism"~"^(hotel|guest_house)$"]["name"](around:3500,${lat},${lon});out center tags 80;`
       : `[out:json][timeout:25];nwr["amenity"~"^(restaurant|cafe)$"]["name"](around:1500,${lat},${lon});out center tags 150;`;
@@ -311,7 +356,8 @@ export function osmPlaces(lat, lon, kind) {
       const base = { id: `o${e.type[0]}${e.id}`, name: t.name, lat: la, lon: lo, address, website: t.website || t['contact:website'] || '', phone: t.phone || t['contact:phone'] || '' };
       if (kind === 'hotel') return { ...base, stars: Number(t.stars) || null, style: t.tourism === 'guest_house' ? 'B&B / pension' : 'Hotel', text: '' };
       const cafe = t.amenity === 'cafe';
-      return { ...base, cuisine: cafe ? 'Café / lunch' : cuisineLabel(t.cuisine), meal: cafe ? 'lunch' : 'beide', text: '', menuUrl: t['website:menu'] || '' };
+      const { meal, allround } = inferMeal(t);
+      return { ...base, cuisine: cafe ? 'Café / lunch' : cuisineLabel(t.cuisine), meal, allround, hours: t.opening_hours || '', text: '', menuUrl: t['website:menu'] || '' };
     }).filter((x) => x.lat && x.name);
     if (!items.length) throw new Error('geen resultaten');
     return items;
