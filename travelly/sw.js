@@ -1,5 +1,5 @@
 // Travelly service worker: de app werkt ook zonder internet (met wat al eerder geladen is).
-const VERSION = 'travelly-v8';
+const VERSION = 'travelly-v10';
 const SHELL = [
   './', 'index.html', 'css/app.css', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png',
   'vendor/leaflet.js', 'vendor/leaflet.css',

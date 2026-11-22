@@ -656,3 +656,13 @@ button.tl-go:hover { background: var(--line-2); color: var(--ink); }
 .stops small { color: var(--muted); font-weight: 400; }
 .tour-link { display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; font-size: 12.5px; color: var(--accent); font-weight: 500; }
 .tour-link .ic { width: 14px; height: 14px; }
+
+/* ---------------- reizen verwijderen & eigen plekken ---------------- */
+.tripwrap { position: relative; }
+.tripwrap .tripcard { padding-right: 64px; }
+.tripdel { position: absolute; top: 10px; right: 10px; width: 38px; height: 38px; color: #A3483F; }
+.tripdel .ic { width: 18px; height: 18px; }
+.linkbtn { border: 0; background: none; padding: 0; text-decoration: underline; text-underline-offset: 2px; font-size: inherit; cursor: pointer; }
+.linkbtn.danger { color: #A3483F; }
+.city.on { background: var(--accent-soft); border-color: var(--accent); }
+.fee.own { background: #FBF0E6; color: var(--terra); }

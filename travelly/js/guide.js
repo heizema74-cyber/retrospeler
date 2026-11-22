@@ -156,6 +156,17 @@ export async function placesFor(city, kind) {
   return memo.get(k);
 }
 
+// Zelf toegevoegde plekken van een reis (trip.custom), in hetzelfde formaat als de rest.
+export function customFor(trip, kind) {
+  return decorate((trip.custom || []).filter((c) => c.kind === kind), kind, trip.city);
+}
+export async function sightsForTrip(trip) {
+  return [...customFor(trip, 'sight'), ...await sightsFor(trip.city).catch((e) => (trip.custom?.length ? [] : Promise.reject(e)))];
+}
+export async function placesForTrip(trip, kind) {
+  return [...customFor(trip, kind), ...await placesFor(trip.city, kind).catch((e) => (customFor(trip, kind).length ? [] : Promise.reject(e)))];
+}
+
 // Gevelfoto's zoeken voor restaurants/hotels zonder foto (steden zonder eigen gids).
 // Geeft het aantal gevonden foto's terug; de plekken zelf worden bijgewerkt.
 export async function facadePhotos(city, list) {

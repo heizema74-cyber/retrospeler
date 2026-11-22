@@ -82,7 +82,8 @@ function cached(key, ttlMs, fn) {
   const k = 'travelly.c.' + key;
   try {
     const hit = JSON.parse(localStorage.getItem(k) || 'null');
-    if (hit && Date.now() - hit.t < ttlMs) return Promise.resolve(hit.v);
+    // een antwoord kan zelf een kortere bewaartijd meegeven (__ttl), bv. een reservelijst
+    if (hit && Date.now() - hit.t < (hit.v?.__ttl || ttlMs)) return Promise.resolve(hit.v);
   } catch { /* leeg */ }
   return fn().then((v) => {
     try { localStorage.setItem(k, JSON.stringify({ t: Date.now(), v })); } catch { pruneCache(); }
@@ -293,7 +294,14 @@ export function osmSightKind(t) {
   if (am === 'cinema') return { cat: 'film', indoor: true, dur: 150, fee: 'entree', short: 'Bioscoop', fam: { min: 4, buggy: 'ja', text: 'Kijk in het programma naar kinderfilms.' }, [NOPLAN]: true };
   if (am === 'theatre' || am === 'arts_centre' || am === 'concert_hall') return { cat: 'film', indoor: true, dur: 150, fee: 'entree', short: am === 'theatre' ? 'Theater' : 'Cultuurcentrum', fam: { min: 4, buggy: 'ja', text: 'Kijk in het programma naar familievoorstellingen.' }, [NOPLAN]: true };
   if (leis === 'stadium') return { cat: 'uitje', indoor: false, dur: 150, fee: 'entree', short: 'Stadion', fam: { min: 6, buggy: 'nee', text: 'Bij een wedstrijd: gehoorbescherming voor kinderen is handig.' }, [NOPLAN]: true };
+  if (/swimming/.test(sport) || leis === 'swimming_area' || /zwembad|zwemba[dt]|\bbad\b/i.test(t.name || '')) return { cat: 'uitje', indoor: t.leisure !== 'swimming_area', dur: 120, fee: 'entree', short: 'Zwembad', fam: { min: 1, buggy: 'deels', text: 'Kijk of er een peuterbad is en wanneer er recreatief zwemmen is.' } };
+  if (leis === 'ice_rink' || /skating/.test(sport)) return { cat: 'uitje', indoor: true, dur: 90, fee: 'entree', short: 'IJsbaan', fam: { min: 4, buggy: 'nee', text: 'Vaak met schaatshulpjes voor kinderen.' } };
+  if (leis === 'trampoline_park' || /trampoline/i.test(`${sport} ${t.name}`)) return { cat: 'uitje', indoor: true, dur: 90, fee: 'entree', short: 'Trampolinepark', fam: { min: 3, buggy: 'ja', text: 'Vaak aparte tijden voor peuters.' } };
+  if (/karting/.test(sport) || /karting|kartbaan/i.test(t.name || '')) return { cat: 'uitje', indoor: false, dur: 90, fee: 'entree', short: 'Karting', fam: { min: 8, buggy: 'nee', text: 'Kinderkarts vanaf ongeveer 8 jaar.' } };
+  if (/laser/i.test(`${sport} ${t.name}`)) return { cat: 'uitje', indoor: true, dur: 60, fee: 'entree', short: 'Lasergame', fam: { min: 7, buggy: 'ja', text: '' }, [NOPLAN]: true };
+  if (/bowling/.test(sport) || /bowling/i.test(t.name || '')) return { cat: 'uitje', indoor: true, dur: 90, fee: 'entree', short: 'Bowling', fam: { min: 4, buggy: 'ja', text: 'Met hekjes in de goot ook leuk voor kinderen.' }, [NOPLAN]: true };
   if (leis === 'park' || leis === 'nature_reserve') return { cat: 'natuur', indoor: false, dur: 60, fee: 'gratis', short: leis === 'park' ? 'Park' : 'Natuurgebied' };
+  if (t.building === 'prison' || hist === 'prison') return { cat: 'historisch', indoor: true, dur: 45, fee: null, short: 'Historisch gebouw' };
   if (tour === 'viewpoint') return { cat: 'wandelen', indoor: false, dur: 20, fee: 'gratis', short: 'Uitzichtpunt', walkby: true };
   if (hist === 'castle' || hist === 'manor') return { cat: 'historisch', indoor: false, dur: 60, fee: 'buiten', short: hist === 'castle' ? 'Kasteel' : 'Landhuis' };
   if (hist === 'church' || t.building === 'church') return { cat: 'historisch', indoor: true, dur: 30, fee: null, short: 'Kerk' };
@@ -305,23 +313,25 @@ export function osmSightKind(t) {
 }
 
 export function osmSights(lat, lon, radius = 6000) {
-  return cached(`os1.${lat.toFixed(3)},${lon.toFixed(3)}`, 7 * 864e5, async () => {
+  return cached(`os2.${lat.toFixed(3)},${lon.toFixed(3)}`, 7 * 864e5, async () => {
     const A = `(around:${radius},${lat},${lon})`;
     const q = `[out:json][timeout:25];(
       nwr["tourism"~"^(museum|gallery|zoo|aquarium|theme_park|attraction|viewpoint)$"]["name"]${A};
       nwr["zoo"]["name"]${A};
       nwr["amenity"~"^(cinema|theatre|arts_centre|planetarium)$"]["name"]${A};
-      nwr["leisure"~"^(water_park|stadium|indoor_play|bowling_alley|escape_game|miniature_golf)$"]["name"]${A};
+      nwr["leisure"~"^(water_park|stadium|indoor_play|bowling_alley|escape_game|miniature_golf|ice_rink|trampoline_park)$"]["name"]${A};
       nwr["leisure"="playground"]["indoor"="yes"]["name"]${A};
-      nwr["sport"~"climbing|bouldering"]["name"]${A};
+      nwr["leisure"="sports_centre"]["sport"~"swimming|climbing|bouldering|bowling|karting|ice_skating|trampoline"]["name"]${A};
+      nwr["sport"~"climbing|bouldering|karting"]["name"]${A};
       nwr["leisure"~"^(park|nature_reserve)$"]["name"]["wikidata"]${A};
-      nwr["historic"~"^(castle|manor|tower|city_gate|windmill|monument|church|fort|ruins)$"]["name"]["wikidata"]${A};
+      nwr["historic"]["name"]["wikidata"]${A};
+      nwr["building"~"^(prison|castle|tower)$"]["name"]["wikidata"]${A};
       nwr["man_made"="windmill"]["name"]${A};
-    );out center tags 400;`;
-    let elements;
-    try { elements = (await overpass(q)).elements || []; }
-    catch { elements = await nominatimSights(lat, lon); }
-    return elements.map((e) => {
+    );out center tags 500;`;
+    let elements, fallback = false;
+    try { elements = (await overpass(q, 25000)).elements || []; }
+    catch { elements = await nominatimSights(lat, lon); fallback = true; }
+    const items = elements.map((e) => {
       const t = e.tags || {};
       const la = e.lat ?? e.center?.lat, lo = e.lon ?? e.center?.lon;
       if (!la || !t.name) return null;
@@ -338,14 +348,17 @@ export function osmSights(lat, lon, radius = 6000) {
         fee: t.fee === 'no' ? 'gratis' : t.fee === 'yes' ? 'entree' : k.fee,
       };
     }).filter(Boolean);
-  });
+    // reservelijst is minder volledig: maar 2 uur bewaren, daarna opnieuw proberen
+    return { items, __ttl: fallback ? 2 * 3600e3 : undefined };
+  }).then((r) => r.items || r);
 }
 
 // Reserve als Overpass niet reageert: per soort zoeken via Nominatim.
 async function nominatimSights(lat, lon) {
   const d = 0.06, dl = d / Math.cos(lat * Math.PI / 180); // ±6,5 km, ook in oost-west richting
   const box = [lon - dl, lat + d, lon + dl, lat - d].map((x) => x.toFixed(4)).join(',');
-  const terms = ['museum', 'zoo', 'aquarium', 'attraction', 'theme park', 'cinema', 'theatre', 'castle', 'windmill', 'tower', 'stadium', 'petting zoo', 'climbing', 'indoor playground', 'monkey town', 'ballorig', 'water park'];
+  // Beperkt aantal zoekopdrachten: Nominatim is een gedeelde, gratis dienst (max. 1 per seconde).
+  const terms = ['museum', 'zoo', 'attraction', 'cinema', 'theatre', 'castle', 'windmill', 'petting zoo', 'indoor playground', 'bowling', 'zwembad', 'climbing'];
   const out = [];
   for (const term of terms) {
     try {
@@ -354,6 +367,8 @@ async function nominatimSights(lat, lon) {
         if (!r.name) continue;
         const t = { ...(r.extratags || {}), name: r.name, [r.category]: r.type, 'addr:street': r.address?.road, 'addr:housenumber': r.address?.house_number };
         if (term === 'climbing') t.sport = 'climbing';
+        if (term === 'zwembad' || term === 'swimming pool') t.sport = 'swimming';
+        if (term === 'bowling') t.sport = 'bowling';
         if (term === 'indoor playground' || term === 'monkey town' || term === 'ballorig') t.leisure = 'indoor_play';
         out.push({ type: r.osm_type || 'node', id: r.osm_id, lat: Number(r.lat), lon: Number(r.lon), tags: t });
       }
@@ -381,12 +396,13 @@ export async function enrichOsmSights(list) {
 }
 
 export function wikiSights(lat, lon, lang = 'nl') {
-  return cached(`ws3.${lang}.${lat.toFixed(3)},${lon.toFixed(3)}`, 7 * 864e5, async () => {
+  return cached(`ws4.${lang}.${lat.toFixed(3)},${lon.toFixed(3)}`, 7 * 864e5, async () => {
     const url = `https://${lang}.wikipedia.org/w/api.php?action=query&format=json&formatversion=2&origin=*` +
       `&generator=geosearch&ggscoord=${lat}|${lon}&ggsradius=10000&ggslimit=80` +
       `&prop=pageimages|description|coordinates|pageprops&ppprop=wikibase_item&piprop=thumbnail&pithumbsize=960&colimit=max`;
     const j = await getJSON(url, { headers: WIKI_HEADERS });
-    const pages = (j.query?.pages || []).filter((p) => p.thumbnail && p.coordinates && !SKIP.test(`${p.title} ${p.description || ''}`));
+    const OUTING = /museum|toren|molen|kasteel|burcht|dierentuin|attractie|planetarium|theater|schouwburg|bioscoop|zwembad|park\b/i;
+    const pages = (j.query?.pages || []).filter((p) => p.coordinates && (p.thumbnail || OUTING.test(`${p.title} ${p.description || ''}`)) && !SKIP.test(`${p.title} ${p.description || ''}`));
     const qids = pages.map((p) => p.pageprops?.wikibase_item).filter(Boolean);
     const wd = qids.length ? await wikidataInfo(qids).catch(() => ({})) : {};
     // Bekende plekken dicht bij het centrum eerst; kerkjes in omliggende dorpen zakken.
@@ -405,7 +421,7 @@ export function wikiSights(lat, lon, lang = 'nl') {
         id: `w${lang}${p.pageid}`, name: p.title.replace(/\s*\(.*\)$/, ''), ...g,
         prio, lat: p.coordinates[0].lat, lon: p.coordinates[0].lon,
         short: p.description ? p.description[0].toUpperCase() + p.description.slice(1) : '',
-        photos: [p.thumbnail.source], wiki: [lang, p.title], website: info.website || '', rank: i,
+        photos: p.thumbnail ? [p.thumbnail.source] : [], wiki: [lang, p.title], website: info.website || '', rank: i,
       };
     });
   });
@@ -484,15 +500,12 @@ export function inferCuisine(t) {
   return hit ? hit[1] : 'Restaurant';
 }
 
-async function overpass(query) {
-  let err;
-  // niet te lang wachten: lukt het niet snel, dan neemt Nominatim het over
-  for (const ep of OVERPASS.slice(0, 2)) {
-    try {
-      return await getJSON(ep, { method: 'POST', body: 'data=' + enc(query), headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }, 12000);
-    } catch (e) { err = e; }
-  }
-  throw err;
+// Twee Overpass-servers tegelijk; de eerste die antwoordt wint.
+// Lukt het geen van beide binnen de tijd, dan neemt Nominatim het over.
+async function overpass(query, timeout = 15000) {
+  return Promise.any(OVERPASS.slice(0, 2).map((ep) =>
+    getJSON(ep, { method: 'POST', body: 'data=' + enc(query), headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }, timeout)
+      .then((j) => (j && Array.isArray(j.elements) ? j : Promise.reject(new Error('leeg antwoord'))))));
 }
 
 export function osmPlaces(lat, lon, kind) {

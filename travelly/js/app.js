@@ -5,7 +5,7 @@ import {
   fmt, iso, addDays, daysBetween, tripDates, distLabel, walkMin, distKm, wm, gmaps, enc,
   searchCity, tripWeather, currentWeather, weatherInfo, wikiSummary,
 } from './api.js';
-import { FEATURED, guideFor, sightsFor, placesFor, findPlace, adviceFor, CAT, partyOf, familyOf, partyLabel, kidFit, facadePhotos } from './guide.js';
+import { FEATURED, guideFor, sightsFor, placesFor, findPlace, adviceFor, CAT, partyOf, familyOf, partyLabel, kidFit, facadePhotos, sightsForTrip, placesForTrip, customFor } from './guide.js';
 import { makePlan, sortItems, explainDay } from './planner.js';
 import { makeMap, marker, line, fit, userLocation } from './map.js';
 
@@ -71,7 +71,7 @@ function placeCard(trip, p, { compact = false } = {}) {
     <a class="pcard-img" href="#/r/${trip.id}/p/${enc(p.id)}">${photoOrPh(p, compact ? 250 : 500)}</a>
     <a class="pcard-body" href="#/r/${trip.id}/p/${enc(p.id)}">
       <h3>${esc(p.name)}</h3>
-      <p class="meta">${esc(meta)}${feeBadge(p)}</p>
+      <p class="meta">${esc(meta)}${feeBadge(p)}${p.custom ? ' <span class="fee own">Zelf toegevoegd</span>' : ''}</p>
       ${!compact && (p.short || p.text) ? `<p class="desc">${esc(p.short || p.text)}</p>` : ''}
       ${cardFit(trip, p)}
       ${p.kind === 'food' && p.menu?.dishes?.length ? `<p class="meta small dishline">${icon('food')} ${esc(p.menu.dishes.slice(0, 3).join(' · '))}</p>` : ''}
@@ -271,7 +271,7 @@ ${familyOf(trip) && g?.familyTips ? `<section class="block"><div class="block-h"
     }
   }
 
-  sightsFor(trip.city).then((list) => {
+  sightsForTrip(trip).then((list) => {
     const el = $('#home-sights');
     const fam = familyOf(trip);
     const fitScore = (s) => { const f = kidFit(s, fam); return f ? (f.level === 'top' ? 3 : f.level === 'deels' ? 1 : -4) : 0; };
@@ -473,8 +473,8 @@ function newTrip() {
 
 async function buildPlan(trip) {
   const [sights, food, weather] = await Promise.all([
-    sightsFor(trip.city),
-    placesFor(trip.city, 'food').catch(() => []),
+    sightsForTrip(trip),
+    placesForTrip(trip, 'food').catch(() => []),
     weatherFor(trip),
   ]);
   const plan = makePlan(trip, sights, food, weather);
@@ -489,13 +489,25 @@ function trips() {
   <div class="trips">
     ${st.trips.map((t) => {
       const g = guideFor(t.city); const img = g?.hero?.[0] || t.city.photo;
-      return `<a class="tripcard${t.id === st.activeTripId ? ' cur' : ''}" href="#/r/${t.id}" style="${img ? `--img:url('${esc(wm(img, 960))}')` : ''}">
-        <div><h3>${esc(t.city.name)}</h3><p>${fmt.range(t.start, t.end)} · ${t.persons} pers.</p></div>${icon('right')}</a>`;
+      return `<div class="tripwrap"><a class="tripcard${t.id === st.activeTripId ? ' cur' : ''}" href="#/r/${t.id}" style="${img ? `--img:url('${esc(wm(img, 960))}')` : ''}">
+        <div><h3>${esc(t.city.name)}</h3><p>${fmt.range(t.start, t.end)} · ${t.persons} pers.</p></div>${icon('right')}</a>
+        <button class="iconbtn glass tripdel" data-del="${t.id}" aria-label="Reis naar ${esc(t.city.name)} verwijderen">${icon('trash')}</button></div>`;
     }).join('') || '<div class="empty">Nog geen reizen.</div>'}
     <a class="btn big" href="#/nieuw">${icon('plus')} Nieuwe reis</a>
     <button class="btn ghost" id="imp">${icon('upload')} Reis importeren</button>
   </div>`;
   $('#imp').onclick = importFlow;
+  $('.trips').addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-del]');
+    if (!b) return;
+    e.preventDefault();
+    const t = S.getTrip(b.dataset.del);
+    if (!t || !confirm(`De reis naar ${t.city.name} (${fmt.range(t.start, t.end)}) met alle notities en foto's verwijderen?`)) return;
+    await S.deleteTrip(t.id);
+    toast(`Reis naar ${t.city.name} verwijderd`);
+    trips();
+    updateNav('/reizen');
+  });
 }
 
 function more() {
@@ -555,7 +567,7 @@ ${familyOf(trip) && g?.familyTips ? `<section class="block"><div class="block-h"
   }
   const map = makeMap($('#ov-map'), { lat: trip.city.lat, lon: trip.city.lon, zoom: 14, interactive: false });
   cleanup.push(() => map.remove());
-  sightsFor(trip.city).then((list) => { list.filter((s) => s.km < 5 && s.cat !== 'spelen').forEach((p) => marker(map, p)); }).catch(() => {});
+  sightsForTrip(trip).then((list) => { list.filter((s) => s.km < 5 && s.cat !== 'spelen').forEach((p) => marker(map, p)); }).catch(() => {});
 
   const weather = await weatherFor(trip);
   const ws = weather.filter((w) => w.tmax != null);
@@ -587,17 +599,19 @@ async function listPage(id, kind) {
   let filter = filters[0][0];
   let cuisine = '';
   view.innerHTML = `
-  ${header(L.title, { back: `#/r/${id}`, action: `<a class="iconbtn" href="#/r/${id}/kaart?${kind}" aria-label="Op de kaart">${icon('map')}</a>`, sub: esc(trip.city.name) })}
+  ${header(L.title, { back: `#/r/${id}`, action: `<button class="iconbtn" id="addplace" aria-label="Zelf een plek toevoegen">${icon('plus')}</button><a class="iconbtn" href="#/r/${id}/kaart?${kind}" aria-label="Op de kaart">${icon('map')}</a>`, sub: esc(trip.city.name) })}
   <div class="chips scroll" id="flt">${filters.map(([k, l], i) => `<button class="chip${i === 0 ? ' on' : ''}" data-k="${k}">${l}</button>`).join('')}</div>
   <div class="chips scroll" id="cuis" hidden></div>
   <div class="list" id="list">${skeleton(5)}</div>
   ${kind !== 'sight' ? `<p class="credits">${guideFor(trip.city) ? 'Selectie van Travelly. ' : 'Uit OpenStreetMap. '}Foto's, prijzen en reviews vind je via ${icon('external')} Google Maps op de detailpagina.</p>` : ''}`;
 
+  $('#addplace').onclick = () => addPlace(trip, kind);
   let all;
   try {
-    all = kind === 'sight' ? await sightsFor(trip.city) : await placesFor(trip.city, kind);
+    all = kind === 'sight' ? await sightsForTrip(trip) : await placesForTrip(trip, kind);
+    if (!all.length) throw new Error('leeg');
   } catch {
-    $('#list').innerHTML = errorBox(kind === 'sight' ? 'Bezienswaardigheden konden niet geladen worden.' : 'Deze gegevens komen van OpenStreetMap en zijn even niet bereikbaar.');
+    $('#list').innerHTML = `<div class="empty">${icon('cloud')}<p>${kind === 'sight' ? 'Bezienswaardigheden' : kind === 'hotel' ? 'Hotels' : 'Restaurants'} konden niet geladen worden. Probeer het straks opnieuw, of voeg zelf een plek toe.</p><button class="btn" onclick="document.getElementById('addplace').click()">${icon('plus')} Plek toevoegen</button></div>`;
     return;
   }
   if (kind === 'food') {
@@ -613,7 +627,7 @@ async function listPage(id, kind) {
     let l = all.slice();
     if (kind === 'sight') {
       const fs = (s) => { const f = kidFit(s, fam); return f ? (f.level === 'top' ? 3 : f.level === 'deels' ? 1 : -4) : 0; };
-      if (filter === 'top') l = l.filter((s) => s.cat !== 'dagtrip' && s.cat !== 'spelen' && s.cat !== 'film').sort((a, b) => (b.prio + fs(b)) - (a.prio + fs(a)) || (a.rank ?? 0) - (b.rank ?? 0) || a.km - b.km);
+      if (filter === 'top') l = l.filter((s) => s.custom || (s.cat !== 'dagtrip' && s.cat !== 'spelen' && s.cat !== 'film')).sort((a, b) => (!!b.custom - !!a.custom) || (b.prio + fs(b)) - (a.prio + fs(a)) || (a.rank ?? 0) - (b.rank ?? 0) || a.km - b.km);
       else if (filter === 'kids') l = l.filter((s) => s.cat !== 'dagtrip' && kidFit(s, fam)?.level !== 'nee').sort((a, b) => fs(b) - fs(a) || b.prio - a.prio);
       else if (filter === 'binnen') l = l.filter((s) => s.indoor && s.cat !== 'spelen');
       else if (filter === 'uitjes') l = l.filter((s) => ['dieren', 'uitje', 'spelen'].includes(s.cat)).sort((a, b) => b.prio - a.prio || a.km - b.km);
@@ -650,11 +664,75 @@ async function listPage(id, kind) {
   }
 }
 
+// ------------------------------------------------------------------ ZELF EEN PLEK TOEVOEGEN
+const ADD_TYPES = {
+  sight: [['museum', 'Museum'], ['uitje', 'Uitje (bowling, zwembad, speeltuin…)'], ['dieren', 'Dieren'], ['historisch', 'Historisch'], ['natuur', 'Natuur & parken'], ['film', 'Film & theater'], ['wandelen', 'Wandelen']],
+  food: [['Restaurant', 'Restaurant'], ['Grand café', 'Grand café / brasserie'], ['Café / lunch', 'Café / lunch'], ['Chinees', 'Chinees / Aziatisch'], ['Italiaans', 'Italiaans / pizza'], ['Hollands', 'Hollands'], ['Pannenkoeken', 'Pannenkoeken']],
+  hotel: [['Hotel', 'Hotel'], ['B&B / pension', 'B&B / pension'], ['Vakantiehuis', 'Vakantiehuis']],
+};
+
+function addPlace(trip, kind) {
+  const types = ADD_TYPES[kind];
+  sheet(`
+    <h2 class="sheet-t">Zelf een plek toevoegen</h2>
+    <p class="hint">${icon('info')} Mis je iets? Zoek het op naam of adres in ${esc(trip.city.name)}. Het komt in je lijst, op de kaart en in de planning.</p>
+    <form class="form tight" id="apf">
+      <label>Naam of adres<div class="search">${icon('search')}<input id="apq" placeholder="Bijv. Bowling Franeker" required></div></label>
+      <div id="apres" class="sugg"></div>
+      <label>Naam<input id="apname" placeholder="Bijv. Kaatsmuseum" required></label>
+      <label>Soort<select id="apt">${types.map(([k, l]) => `<option value="${esc(k)}">${l}</option>`).join('')}</select></label>
+      <label>Notitie (optioneel)<input id="apn" placeholder="Bijv. tip van een vriend"></label>
+      <button class="btn" type="submit" id="apgo" disabled>${icon('plus')} Toevoegen</button>
+    </form>`, {
+    onMount(el, close) {
+      let chosen = null, timer;
+      const res = $('#apres', el), q = $('#apq', el);
+      const search = async () => {
+        const v = q.value.trim();
+        if (v.length < 3) { res.innerHTML = ''; return; }
+        res.innerHTML = '<p class="hint">Zoeken…</p>';
+        const { lat, lon } = trip.city, d = 0.15, dl = d / Math.cos(lat * Math.PI / 180);
+        try {
+          const r = await (await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&addressdetails=1&viewbox=${lon - dl},${lat + d},${lon + dl},${lat - d}&bounded=1&q=${encodeURIComponent(v)}`)).json();
+          res.innerHTML = r.length ? r.map((x, i) => `<button type="button" class="city" data-i="${i}"><span class="city-ph">${icon('pin')}</span><span><b>${esc(x.name || v)}</b><small>${esc([x.address?.road, x.address?.house_number, x.address?.town || x.address?.city || x.address?.village].filter(Boolean).join(' '))}</small></span></button>`).join('')
+            : `<p class="hint">Niet gevonden in ${esc(trip.city.name)}. Probeer het adres (straat en huisnummer).</p>`;
+          res.onclick = (e) => {
+            const b = e.target.closest('[data-i]'); if (!b) return;
+            const x = r[b.dataset.i];
+            chosen = { name: x.name || v, lat: Number(x.lat), lon: Number(x.lon), address: [x.address?.road, x.address?.house_number].filter(Boolean).join(' ') };
+            $$('.city', res).forEach((c) => c.classList.toggle('on', c === b));
+            if (!$('#apname', el).value.trim()) $('#apname', el).value = x.name || v;
+            $('#apgo', el).disabled = false;
+          };
+        } catch { res.innerHTML = '<p class="hint">Zoeken lukt nu niet. Controleer je internetverbinding.</p>'; }
+      };
+      q.addEventListener('input', () => { clearTimeout(timer); chosen = null; $('#apgo', el).disabled = true; timer = setTimeout(search, 500); });
+      $('#apf', el).onsubmit = (e) => {
+        e.preventDefault();
+        if (!chosen) return;
+        const type = $('#apt', el).value;
+        const place = {
+          id: S.uid('c'), kind, ...chosen, name: $('#apname', el).value.trim() || chosen.name, custom: true, note: $('#apn', el).value.trim(), text: $('#apn', el).value.trim(),
+          ...(kind === 'sight' ? { cat: type, short: types.find((t) => t[0] === type)[1].replace(/ \(.*\)$/, ''), indoor: ['museum', 'film', 'uitje'].includes(type), dur: type === 'museum' ? 90 : type === 'uitje' ? 120 : 45, prio: 4, fee: null }
+            : kind === 'food' ? { cuisine: type, meal: /café|lunch|pannenkoek/i.test(type) ? 'beide' : 'diner', allround: /café|brasserie|pannenkoek/i.test(type) }
+            : { style: type }),
+        };
+        S.updateTrip(trip.id, (t) => { (t.custom ||= []).push(place); });
+        close();
+        toast(`${place.name} toegevoegd`);
+        router();
+      };
+      setTimeout(() => q.focus(), 300);
+    },
+  });
+}
+
 // ------------------------------------------------------------------ DETAIL
 async function detail(id, pid) {
   const trip = S.getTrip(id);
   view.innerHTML = `${header('', { back: `#/r/${id}` })}<div class="list">${skeleton(1)}</div>`;
-  const p = await findPlace(trip.city, pid) || trip.favorites?.[pid];
+  const own = (trip.custom || []).find((c) => c.id === pid);
+  const p = (own && [...customFor(trip, own.kind)].find((c) => c.id === pid)) || await findPlace(trip.city, pid) || trip.favorites?.[pid];
   if (!p) { view.innerHTML = header('Niet gevonden', { back: `#/r/${id}` }) + errorBox('Deze plek kon niet geladen worden.'); return; }
   const back = p.kind === 'sight' ? 'zien' : p.kind === 'hotel' ? 'hotels' : 'eten';
   const photos = p.photos?.length ? p.photos : p.photo ? [p.photo] : [];
@@ -700,6 +778,7 @@ async function detail(id, pid) {
       ${p.todo?.length ? `<section class="dotodo"><h2 class="sec-t">Wat kun je hier doen</h2><ul>${p.todo.map((t) => `<li>${icon('done')}<span>${esc(t)}</span></li>`).join('')}</ul></section>` : ''}
       ${famBlock(trip, p)}
       ${p.closedNote || p.closed ? `<div class="note-line">${icon('info')} ${esc(p.closedNote || '')}${p.closed?.includes(1) ? ' Op maandag gesloten.' : ''} Controleer de actuele openingstijden${p.website ? ' op de website' : ''}.</div>` : ''}
+      ${p.custom ? `<div class="note-line">${icon('user')} Zelf toegevoegd aan deze reis. <button class="linkbtn danger" id="delcustom">Verwijder deze plek</button></div>` : ''}
       ${menuBlock(p)}
       ${p.kind !== 'sight' ? `<div class="note-line">${icon('star')} Meer foto's en reviews: bekijk ze in Google Maps.</div>` : ''}
       <div class="addplan">
@@ -716,6 +795,15 @@ async function detail(id, pid) {
     </div>
   </article>`;
 
+  $('#delcustom')?.addEventListener('click', () => {
+    if (!confirm(`${p.name} uit deze reis verwijderen?`)) return;
+    S.updateTrip(id, (t) => {
+      t.custom = (t.custom || []).filter((c) => c.id !== pid);
+      if (t.favorites) delete t.favorites[pid];
+    });
+    toast(`${p.name} verwijderd`);
+    location.hash = `#/r/${id}/${back}`;
+  });
   const gal = $('#gal');
   if (gal) gal.addEventListener('scroll', () => {
     const i = Math.round(gal.scrollLeft / gal.clientWidth);
@@ -823,15 +911,15 @@ async function mapPage(id) {
   draw(false);
   const load = async (k, fn) => { try { data[k] = await fn(); draw(filter === k || (filter === 'all' && k === 'sight')); } catch { /* bron niet bereikbaar */ } };
   const famMap = familyOf(trip);
-  load('sight', async () => (await sightsFor(trip.city)).filter((s) => famMap || s.cat !== 'spelen'));
-  load('hotel', () => placesFor(trip.city, 'hotel'));
-  load('food', () => placesFor(trip.city, 'food'));
+  load('sight', async () => (await sightsForTrip(trip)).filter((s) => famMap || s.cat !== 'spelen'));
+  load('hotel', () => placesForTrip(trip, 'hotel'));
+  load('food', () => placesForTrip(trip, 'food'));
 }
 
 // ------------------------------------------------------------------ PLANNING
 async function planning(id) {
   const trip = S.getTrip(id);
-  const [weather, pSights, pFood] = await Promise.all([weatherFor(trip), sightsFor(trip.city).catch(() => []), placesFor(trip.city, 'food').catch(() => [])]);
+  const [weather, pSights, pFood] = await Promise.all([weatherFor(trip), sightsForTrip(trip).catch(() => []), placesForTrip(trip, 'food').catch(() => [])]);
   const byId = new Map([...pSights, ...pFood].map((x) => [x.id, x]));
   const placeById = (pid) => byId.get(pid);
   const W = (d) => weather.find((w) => w.date === d);
@@ -947,7 +1035,7 @@ async function editItem(trip, date, itemId) {
   const it = itemId ? day.items.find((x) => x.id === itemId) : null;
   let options = [];
   try {
-    const [s, f] = await Promise.all([sightsFor(trip.city), placesFor(trip.city, 'food').catch(() => [])]);
+    const [s, f] = await Promise.all([sightsForTrip(trip), placesForTrip(trip, 'food').catch(() => [])]);
     const favs = Object.values(trip.favorites || {});
     options = [...favs.map((x) => ({ ...x, grp: 'Favorieten' })), ...s.filter((x) => familyOf(trip) || x.cat !== 'spelen').map((x) => ({ ...x, grp: x.cat === 'spelen' ? 'Spelen' : 'Bezienswaardigheden' })), ...f.map((x) => ({ ...x, grp: 'Restaurants' }))];
   } catch { /* alleen vrije tekst */ }
