@@ -321,24 +321,71 @@ const CUISINE = {
   seafood: 'Vis', vegetarian: 'Vegetarisch', vegan: 'Vegan', burger: 'Burgers', pancake: 'Pannenkoeken', asian: 'Aziatisch',
   korean: 'Koreaans', vietnamese: 'Vietnamees', lebanese: 'Libanees', international: 'Internationaal', mediterranean: 'Mediterraan',
   argentinian: 'Argentijns', portuguese: 'Portugees', german: 'Duits', belgian: 'Belgisch', american: 'Amerikaans', breakfast: 'Ontbijt',
+  european: 'Europees', cantonese: 'Kantonees', fish_and_chips: 'Vis & friet', friture: 'Snackbar', kebab: 'Kebab', grill: 'Grill',
+  brasserie: 'Brasserie', bistro: 'Bistro', fine_dining: 'Fine dining', surinamese: 'Surinaams', ethiopian: 'Ethiopisch', eritrean: 'Eritrees',
+  african: 'Afrikaans', middle_eastern: 'Midden-Oosters', syrian: 'Syrisch', persian: 'Perzisch', moroccan: 'Marokkaans',
+  ice_cream: 'IJs', coffee_shop: 'Koffie', cake: 'Gebak', bagel: 'Bagels', pasta: 'Pasta', noodle: 'Noedels', ramen: 'Ramen',
+  dim_sum: 'Dim sum', curry: 'Curry', fusion: 'Fusion', sandwich: 'Broodjes', brunch: 'Brunch', chicken: 'Kip', wok: 'Wok',
+  frisian: 'Fries', local: 'Lokaal', crepe: 'Crêpes', waffle: 'Wafels', japanese_fusion: 'Japans', poke: 'Poké', soup: 'Soep',
 };
 export function cuisineLabel(c) {
   if (!c) return 'Restaurant';
-  return c.split(';').map((x) => CUISINE[x.trim()] || (x.trim()[0].toUpperCase() + x.trim().slice(1).replace(/_/g, ' '))).slice(0, 2).join(' · ');
+  return c.split(';').map((x) => CUISINE[x.trim().toLowerCase()] || (x.trim()[0].toUpperCase() + x.trim().slice(1).replace(/_/g, ' '))).slice(0, 2).join(' · ');
+}
+
+// Gevelfoto van een pand op Wikimedia Commons, alleen als de bestandsnaam precies
+// het adres én de stad noemt (zoals "Franeker - Voorstraat 12.jpg"). Zo tonen we nooit het buurpand.
+export function commonsFacade(place, city) {
+  const m = (place.address || '').match(/^(.+?)\s(\d+)([a-zA-Z]?)$/);
+  if (!m || !city) return Promise.resolve(null);
+  const street = m[1], nr = m[2] + m[3];
+  return cached(`cf.${place.id}`, 30 * 864e5, async () => {
+    const q = `intitle:"${street} ${nr}" ${city}`;
+    const j = await getJSON(`https://commons.wikimedia.org/w/api.php?action=query&format=json&formatversion=2&origin=*&generator=search&gsrnamespace=6&gsrlimit=6&gsrsearch=${enc(q)}&prop=imageinfo&iiprop=url|size&iiurlwidth=500`, { headers: WIKI_HEADERS });
+    const want = new RegExp(`${street.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s+${nr}(?![0-9])`, 'i');
+    const hit = (j.query?.pages || []).find((p) => {
+      const t = p.title || '', inf = p.imageinfo?.[0];
+      return /\.(jpe?g)$/i.test(t) && want.test(t) && t.toLowerCase().includes(city.toLowerCase()) && inf?.thumburl && inf.width >= inf.height * 0.5;
+    });
+    return hit ? { url: hit.imageinfo[0].thumburl, credit: hit.title.replace(/^File:/, '') } : null;
+  }).catch(() => null);
+}
+
+// Geen keuken bekend in OpenStreetMap? Dan zegt de naam vaak genoeg.
+const NAME_KIND = [
+  [/grand[- ]?caf[eé]/i, 'Grand café'], [/brasserie/i, 'Brasserie'], [/eetcaf[eé]/i, 'Eetcafé'], [/bistro/i, 'Bistro'],
+  [/pannenkoek|pancake/i, 'Pannenkoeken'], [/pizz/i, 'Pizza · Italiaans'], [/trattoria|ristorante|osteria/i, 'Italiaans'],
+  [/sushi/i, 'Sushi · Japans'], [/wok/i, 'Wok · Aziatisch'], [/(chin\w*|kwong|wah|long|lotus|dragon|hong|ming|wong)\b/i, 'Chinees'],
+  [/thai/i, 'Thais'], [/indi(a|s)|tandoori|masala/i, 'Indiaas'], [/griek|grieks|olymp|athene|kreta|rhodos|rodos|zorba|acropolis/i, 'Grieks'],
+  [/tapas|bodega/i, 'Spaans · Tapas'], [/steak|grill/i, 'Grill · Vlees'], [/vis|fish|oester/i, 'Vis'], [/herberg|stadsherberg/i, 'Hollands'],
+  [/lunch|broodje|bakker/i, 'Lunchroom'], [/strandpaviljoen|strandtent|paviljoen/i, 'Paviljoen'], [/caf[eé]/i, 'Café'],
+];
+export function inferCuisine(t) {
+  const hit = NAME_KIND.find(([re]) => re.test(t.name || ''));
+  // zegt de naam al wat voor zaak het is (brasserie, grand café, eetcafé…), dan staat dat voorop
+  const strong = hit && /Grand café|Brasserie|Eetcafé|Bistro|Pannenkoeken/.test(hit[1]) ? hit[1] : null;
+  if (t.cuisine) {
+    const c = cuisineLabel(t.cuisine);
+    return strong && !c.includes(strong) ? `${strong} · ${c.split(' · ')[0]}` : c;
+  }
+  if (strong) return strong;
+  if (t.amenity === 'cafe') return 'Café / lunch';
+  return hit ? hit[1] : 'Restaurant';
 }
 
 async function overpass(query) {
   let err;
-  for (const ep of OVERPASS) {
+  // niet te lang wachten: lukt het niet snel, dan neemt Nominatim het over
+  for (const ep of OVERPASS.slice(0, 2)) {
     try {
-      return await getJSON(ep, { method: 'POST', body: 'data=' + enc(query), headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }, 30000);
+      return await getJSON(ep, { method: 'POST', body: 'data=' + enc(query), headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }, 12000);
     } catch (e) { err = e; }
   }
   throw err;
 }
 
 export function osmPlaces(lat, lon, kind) {
-  return cached(`osm2.${kind}.${lat.toFixed(3)},${lon.toFixed(3)}`, 7 * 864e5, async () => {
+  return cached(`osm3.${kind}.${lat.toFixed(3)},${lon.toFixed(3)}`, 7 * 864e5, async () => {
     const q = kind === 'hotel'
       ? `[out:json][timeout:25];nwr["tourism"~"^(hotel|guest_house)$"]["name"](around:3500,${lat},${lon});out center tags 80;`
       : `[out:json][timeout:25];nwr["amenity"~"^(restaurant|cafe)$"]["name"](around:1500,${lat},${lon});out center tags 150;`;
@@ -357,7 +404,7 @@ export function osmPlaces(lat, lon, kind) {
       if (kind === 'hotel') return { ...base, stars: Number(t.stars) || null, style: t.tourism === 'guest_house' ? 'B&B / pension' : 'Hotel', text: '' };
       const cafe = t.amenity === 'cafe';
       const { meal, allround } = inferMeal(t);
-      return { ...base, cuisine: cafe ? 'Café / lunch' : cuisineLabel(t.cuisine), meal, allround, hours: t.opening_hours || '', text: '', menuUrl: t['website:menu'] || '' };
+      return { ...base, cuisine: inferCuisine(t), meal, allround, hours: t.opening_hours || '', text: '', menuUrl: t['website:menu'] || '' };
     }).filter((x) => x.lat && x.name);
     if (!items.length) throw new Error('geen resultaten');
     return items;

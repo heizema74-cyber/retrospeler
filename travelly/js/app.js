@@ -5,7 +5,7 @@ import {
   fmt, iso, addDays, daysBetween, tripDates, distLabel, walkMin, distKm, wm, gmaps, enc,
   searchCity, tripWeather, currentWeather, weatherInfo, wikiSummary,
 } from './api.js';
-import { FEATURED, guideFor, sightsFor, placesFor, findPlace, adviceFor, CAT, partyOf, familyOf, partyLabel, kidFit } from './guide.js';
+import { FEATURED, guideFor, sightsFor, placesFor, findPlace, adviceFor, CAT, partyOf, familyOf, partyLabel, kidFit, facadePhotos } from './guide.js';
 import { makePlan, sortItems, explainDay } from './planner.js';
 import { makeMap, marker, line, fit, userLocation } from './map.js';
 
@@ -75,7 +75,7 @@ function placeCard(trip, p, { compact = false } = {}) {
       ${!compact && (p.short || p.text) ? `<p class="desc">${esc(p.short || p.text)}</p>` : ''}
       ${cardFit(trip, p)}
       ${p.kind === 'food' && p.menu?.dishes?.length ? `<p class="meta small dishline">${icon('food')} ${esc(p.menu.dishes.slice(0, 3).join(' · '))}</p>` : ''}
-      ${p.kind === 'food' && p.meal ? `<p class="meta small">${p.meal === 'lunch' ? 'Lunch' : p.meal === 'diner' ? 'Diner' : 'Lunch & diner'}${p.address ? ' · ' + esc(p.address) : ''}</p>` : ''}
+      ${p.kind === 'food' && (p.address || p.meal) ? `<p class="meta small">${p.address ? esc(p.address) : ''}${p.meal === 'lunch' ? `${p.address ? ' · ' : ''}overdag` : p.meal === 'diner' ? `${p.address ? ' · ' : ''}'s avonds` : ''}</p>` : ''}
       ${p.kind === 'hotel' && p.address ? `<p class="meta small">${p.stars ? '★'.repeat(p.stars) + ' · ' : ''}${esc(p.address)}</p>` : ''}
     </a>
     ${favBtn(trip, p)}
@@ -642,6 +642,11 @@ async function listPage(id, kind) {
   };
   $('#flt').onclick = (e) => { const b = e.target.closest('[data-k]'); if (!b) return; $$('#flt .chip').forEach((x) => x.classList.toggle('on', x === b)); filter = b.dataset.k; draw(); };
   draw();
+  // Andere steden: gevelfoto's op de achtergrond erbij zoeken en de lijst daarna bijwerken.
+  if (kind !== 'sight' && !guideFor(trip.city)) {
+    const here = location.hash;
+    facadePhotos(trip.city, all).then((n) => { if (n && location.hash === here) draw(); }).catch(() => {});
+  }
 }
 
 // ------------------------------------------------------------------ DETAIL

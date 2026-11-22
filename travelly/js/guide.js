@@ -2,7 +2,7 @@
 // voor elke andere stad automatisch samengesteld uit Wikipedia en OpenStreetMap.
 
 import { LEIDEN } from './data/leiden.js';
-import { wikiSights, osmPlaces, distKm, parseISO, tripDates } from './api.js';
+import { wikiSights, osmPlaces, distKm, parseISO, tripDates, commonsFacade } from './api.js';
 
 export const GUIDES = { leiden: LEIDEN };
 
@@ -84,15 +84,21 @@ export function genericFam(p) {
 }
 
 const memo = new Map();
+// alles wat al eens geladen is, op id: zo opent een detailpagina meteen
+const registry = new Map();
 
 function decorate(list, kind, center) {
-  return list.map((p) => ({
-    ...p,
-    kind,
-    km: distKm(center, p),
-    photo: p.photos?.[0] || null,
-    sub: kind === 'sight' ? (CAT[p.cat]?.label || '') : kind === 'hotel' ? (p.style || 'Hotel') : (p.cuisine || 'Restaurant'),
-  }));
+  return list.map((p) => {
+    const d = {
+      ...p,
+      kind,
+      km: distKm(center, p),
+      photo: p.photos?.[0] || null,
+      sub: kind === 'sight' ? (CAT[p.cat]?.label || '') : kind === 'hotel' ? (p.style || 'Hotel') : (p.cuisine || 'Restaurant'),
+    };
+    registry.set(d.id, d);
+    return d;
+  });
 }
 
 export async function sightsFor(city) {
@@ -120,14 +126,30 @@ export async function placesFor(city, kind) {
   return memo.get(k);
 }
 
-export async function findPlace(city, id) {
-  for (const fn of [() => sightsFor(city), () => placesFor(city, 'hotel'), () => placesFor(city, 'food')]) {
-    try {
-      const hit = (await fn()).find((p) => p.id === id);
-      if (hit) return hit;
-    } catch { /* bron niet bereikbaar */ }
+// Gevelfoto's zoeken voor restaurants/hotels zonder foto (steden zonder eigen gids).
+// Geeft het aantal gevonden foto's terug; de plekken zelf worden bijgewerkt.
+export async function facadePhotos(city, list) {
+  const todo = list.filter((p) => !p.photo && p.address && p.km < 2).slice(0, 30);
+  let found = 0;
+  for (let i = 0; i < todo.length; i += 3) {
+    const res = await Promise.all(todo.slice(i, i + 3).map((p) => commonsFacade(p, city.name)));
+    res.forEach((r, k) => {
+      if (!r) return;
+      const p = todo[i + k];
+      Object.assign(p, { photos: [r.url], photo: r.url, photoCredit: r.credit });
+      found++;
+    });
   }
-  return null;
+  return found;
+}
+
+// Zoekt een plek op id. Eerst in wat al geladen is (direct), anders in alle bronnen
+// tegelijk; zodra één bron hem heeft, is hij er (een trage bron houdt niets meer op).
+export async function findPlace(city, id) {
+  if (registry.has(id)) return registry.get(id);
+  const kinds = id.startsWith('o') ? ['food', 'hotel', 'sight'] : ['sight', 'food', 'hotel'];
+  const load = (k) => (k === 'sight' ? sightsFor(city) : placesFor(city, k)).then((l) => l.find((p) => p.id === id) || Promise.reject(new Error('niet hier')));
+  return Promise.any(kinds.map(load)).catch(() => null);
 }
 
 // ---------- advies op basis van datums en weer ----------
