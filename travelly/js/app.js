@@ -6,7 +6,7 @@ import {
   searchCity, tripWeather, currentWeather, weatherInfo, wikiSummary,
 } from './api.js';
 import { FEATURED, guideFor, sightsFor, placesFor, findPlace, adviceFor, CAT, partyOf, familyOf, partyLabel, kidFit } from './guide.js';
-import { makePlan, sortItems } from './planner.js';
+import { makePlan, sortItems, explainDay } from './planner.js';
 import { makeMap, marker, line, fit, userLocation } from './map.js';
 
 const $ = (s, el = document) => el.querySelector(s);
@@ -74,6 +74,7 @@ function placeCard(trip, p, { compact = false } = {}) {
       <p class="meta">${esc(meta)}</p>
       ${!compact && (p.short || p.text) ? `<p class="desc">${esc(p.short || p.text)}</p>` : ''}
       ${cardFit(trip, p)}
+      ${p.kind === 'food' && p.menu?.dishes?.length ? `<p class="meta small dishline">${icon('food')} ${esc(p.menu.dishes.slice(0, 3).join(' · '))}</p>` : ''}
       ${p.kind === 'food' && p.meal ? `<p class="meta small">${p.meal === 'lunch' ? 'Lunch' : p.meal === 'diner' ? 'Diner' : 'Lunch & diner'}${p.address ? ' · ' + esc(p.address) : ''}</p>` : ''}
       ${p.kind === 'hotel' && p.address ? `<p class="meta small">${p.stars ? '★'.repeat(p.stars) + ' · ' : ''}${esc(p.address)}</p>` : ''}
     </a>
@@ -661,13 +662,15 @@ async function detail(id, pid) {
         <a class="btn" target="_blank" rel="noopener" href="${gmaps.place(p, trip.city.name)}">${icon('external')} Open in Google Maps</a>
         <a class="btn ghost" target="_blank" rel="noopener" href="${gmaps.route(p, trip.city.name)}">${icon('nav')} Route</a>
         ${p.website ? `<a class="btn ghost" target="_blank" rel="noopener" href="${esc(p.website)}">${icon('globe')} Website</a>` : ''}
+      ${p.kind !== 'sight' ? `<a class="btn ghost" target="_blank" rel="noopener" href="${gmaps.streetview(p)}">${icon('camera')} Gevel in Street View</a>` : ''}
       </div>
       <p class="text" id="dtext">${esc(p.text || p.short || '')}</p>
       ${p.tip ? `<div class="tip hl">${icon('lightbulb')}<div><b>Insider tip</b><p>${esc(p.tip)}</p></div></div>` : ''}
       ${p.todo?.length ? `<section class="dotodo"><h2 class="sec-t">Wat kun je hier doen</h2><ul>${p.todo.map((t) => `<li>${icon('done')}<span>${esc(t)}</span></li>`).join('')}</ul></section>` : ''}
       ${famBlock(trip, p)}
       ${p.closedNote || p.closed ? `<div class="note-line">${icon('info')} ${esc(p.closedNote || '')}${p.closed?.includes(1) ? ' Op maandag gesloten.' : ''} Controleer de actuele openingstijden${p.website ? ' op de website' : ''}.</div>` : ''}
-      ${p.kind !== 'sight' ? `<div class="note-line">${icon('star')} Foto's, prijzen en reviews: bekijk ze in Google Maps.</div>` : ''}
+      ${menuBlock(p)}
+      ${p.kind !== 'sight' ? `<div class="note-line">${icon('star')} Meer foto's en reviews: bekijk ze in Google Maps.</div>` : ''}
       <div class="addplan">
         <label for="pday">${icon('calendar')} Zet in mijn planning</label>
         <div class="row">
@@ -677,6 +680,7 @@ async function detail(id, pid) {
         </div>
       </div>
       ${photos.length ? `<div class="minimap" id="dmap"></div>` : ''}
+      ${p.photoCredit ? `<p class="credits">Gevelfoto: Wikimedia Commons, “${esc(p.photoCredit)}” · <a target="_blank" rel="noopener" href="https://commons.wikimedia.org/wiki/File:${enc(p.photoCredit.replace(/ /g, '_'))}">maker en licentie ${icon('external')}</a></p>` : ''}
       ${p.wiki ? `<p class="credits">Foto's: Wikimedia Commons · <a target="_blank" rel="noopener" href="https://${p.wiki[0]}.wikipedia.org/wiki/${enc(p.wiki[1].replace(/ /g, '_'))}">Meer op Wikipedia ${icon('external')}</a></p>` : ''}
     </div>
   </article>`;
@@ -702,6 +706,26 @@ async function detail(id, pid) {
     });
     toast(`Toegevoegd aan ${fmt.day(date)} ${fmt.short(date)}`);
   };
+}
+
+function menuBlock(p) {
+  if (p.kind !== 'food') return '';
+  const m = p.menu;
+  const link = m?.url || p.menuUrl || p.website;
+  if (!m) return link ? `<section class="menublock"><h2 class="sec-t">${icon('food')} Op de kaart</h2><p class="muted">We hebben de menukaart van dit restaurant niet kunnen lezen.</p><a class="btn ghost" target="_blank" rel="noopener" href="${esc(link)}">${icon('external')} Bekijk de menukaart op hun website</a></section>` : '';
+  return `<section class="menublock">
+    <h2 class="sec-t">${icon('food')} Op de kaart</h2>
+    ${m.dishes?.length ? `<ul class="dishes">${m.dishes.map((d) => `<li>${esc(d)}</li>`).join('')}</ul>` : ''}
+    ${m.note ? `<p>${esc(m.note)}</p>` : ''}
+    <div class="famchips">
+      ${m.price ? `<span>${icon('ticket')} ${esc(m.price)}</span>` : ''}
+      ${m.veg ? `<span class="ok">${icon('flower')} Vegetarisch op de kaart</span>` : ''}
+      ${m.kids ? `<span class="ok">${icon('smile')} ${esc(m.kids)}</span>` : ''}
+      ${m.hours ? `<span>${icon('clock')} ${esc(m.hours)}</span>` : ''}
+    </div>
+    <a class="btn ghost" target="_blank" rel="noopener" href="${esc(link)}">${icon('external')} Hele menukaart</a>
+    <p class="muted small">Overgenomen van hun website (${esc(m.checked || '')}). Gerechten en prijzen kunnen veranderen.</p>
+  </section>`;
 }
 
 function famBlock(trip, p) {
@@ -776,7 +800,9 @@ async function mapPage(id) {
 // ------------------------------------------------------------------ PLANNING
 async function planning(id) {
   const trip = S.getTrip(id);
-  const weather = await weatherFor(trip);
+  const [weather, pSights, pFood] = await Promise.all([weatherFor(trip), sightsFor(trip.city).catch(() => []), placesFor(trip.city, 'food').catch(() => [])]);
+  const byId = new Map([...pSights, ...pFood].map((x) => [x.id, x]));
+  const placeById = (pid) => byId.get(pid);
   const W = (d) => weather.find((w) => w.date === d);
   const days = trip.plan?.days;
   view.innerHTML = `
@@ -786,7 +812,8 @@ async function planning(id) {
     ${days ? '' : `<button class="btn ghost" id="empty">${icon('edit')} Zelf plannen</button>`}
   </div>
   ${days ? '' : `<div class="empty big">${icon('wand')}<h2>Laat Travelly plannen</h2><p>We verdelen de mooiste plekken over jullie dagen: dicht bij elkaar, musea op regendagen, nooit naar een museum dat dicht is, met lunch en diner in de buurt. Daarna kun je alles aanpassen.</p></div>`}
-  <div class="days">${(days || []).map((d, i) => dayCard(trip, d, i, W(d.date))).join('')}</div>`;
+  ${days ? planIntro(trip) : ''}
+  <div class="days">${(days || []).map((d, i) => dayCard(trip, d, i, W(d.date), explainDay(trip, d, i, days.length, weather, placeById))).join('')}</div>`;
 
   $('#smart').onclick = async () => {
     if (days && !confirm('De huidige planning wordt vervangen door een nieuwe. Doorgaan?')) return;
@@ -808,7 +835,25 @@ async function planning(id) {
   });
 }
 
-function dayCard(trip, d, i, w) {
+function planIntro(trip) {
+  const fam = familyOf(trip);
+  const tempo = trip.prefs?.tempo || 'normaal';
+  const ints = (trip.prefs?.interests || []).map((k) => ({ cultuur: 'cultuur & musea', wandelen: 'wandelen & grachten', natuur: 'natuur & parken' }[k])).filter(Boolean);
+  return `<details class="planintro">
+    <summary>${icon('wand')}<span><b>Zo is jullie planning gemaakt</b><small>Wat we hebben meegewogen</small></span>${icon('down')}</summary>
+    <ul>
+      <li>${icon('cloudsun')} <span><b>Het weer per dag:</b> bij regen musea en binnen, bij mooi weer parken, grachten en terrassen.</span></li>
+      <li>${icon('calendar')} <span><b>Openingsdagen en seizoen:</b> geen museum op een dag dat het dicht is; seizoensplekken (zoals Keukenhof) alleen als ze open zijn.</span></li>
+      <li>${icon('walk')} <span><b>Afstanden:</b> wat dicht bij elkaar ligt komt op dezelfde dag, in een logische looproute.</span></li>
+      <li>${icon('heart')} <span><b>Jullie voorkeuren:</b> ${ints.length ? esc(ints.join(', ')) : 'een mix van alles'}, in een ${esc(tempo)} tempo.</span></li>
+      <li>${icon(fam ? 'baby' : 'users')} <span><b>Wie er meegaat:</b> ${fam ? `kinderen van ${esc(fam.label)}: plekken die bij hun leeftijd passen, speelpauze, rustmoment en vroeg eten.` : esc(partyLabel(trip)) + '.'}</span></li>
+      <li>${icon('food')} <span><b>Eten:</b> lunch en diner dicht bij waar jullie op dat moment zijn, elke keer ergens anders.</span></li>
+    </ul>
+    <p class="hint">${icon('edit')} Tik op een onderdeel om het aan te passen, of voeg zelf iets toe. De uitleg per dag past zich daarop aan.</p>
+  </details>`;
+}
+
+function dayCard(trip, d, i, w, ex) {
   const pts = d.items.filter((x) => x.lat);
   const route = gmaps.day(pts);
   let prev = null;
@@ -817,6 +862,10 @@ function dayCard(trip, d, i, w) {
       <div><span class="daynum">Dag ${i + 1}</span><h2>${fmt.dayCap(d.date)} ${fmt.short(d.date)}</h2></div>
       ${w && w.tmax != null ? `<div class="day-wx" title="${weatherInfo(w.code).label}${w.source === 'klimaat' ? ' (gemiddeld van eerdere jaren)' : ''}">${icon(weatherInfo(w.code).icon, 'wx-' + weatherInfo(w.code).icon)}<b>${Math.round(w.tmax)}°</b>${w.pop != null ? `<small>${icon('drop')}${w.pop}%</small>` : ''}</div>` : ''}
     </div>
+    ${ex ? `<details class="daysum" open>
+      <summary><span><b>${esc(ex.title)}</b><small>${esc(ex.what)}</small></span>${icon('down')}</summary>
+      <ul>${ex.why.map((r) => `<li>${icon(r.icon)}<span>${esc(r.text)}</span></li>`).join('')}</ul>
+    </details>` : ''}
     <ol class="tl">${d.items.map((it) => {
       const walk = prev && it.lat && prev.lat ? walkMin(distKm(prev, it)) : null;
       if (it.lat) prev = it;

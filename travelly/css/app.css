@@ -605,3 +605,32 @@ label.btn { display: inline-flex !important; color: var(--ink) !important; font-
 .famchips .ok { background: var(--accent-soft); border-color: var(--accent-soft); color: var(--accent-2); font-weight: 600; }
 .famchips .no { color: var(--muted); text-decoration: line-through; }
 .tip.fam > .ic { color: var(--terra); }
+
+/* ---------------- uitleg planning & menukaart ---------------- */
+.planintro, .daysum { border-radius: var(--radius); }
+.planintro { margin: 4px 18px 8px; background: var(--accent-soft); padding: 0 16px; max-width: 1076px; }
+@media (min-width: 1100px) { .planintro { margin: 4px 28px 8px; } }
+.planintro summary, .daysum summary { list-style: none; display: flex; align-items: center; gap: 12px; padding: 14px 0; cursor: pointer; }
+.planintro summary::-webkit-details-marker, .daysum summary::-webkit-details-marker { display: none; }
+.planintro summary > span, .daysum summary > span { flex: 1; display: grid; }
+.planintro summary small, .daysum summary small { color: var(--ink-2); font-size: 13px; }
+.planintro summary > .ic:first-child { color: var(--accent); width: 24px; height: 24px; }
+.planintro summary > .ic:last-child, .daysum summary > .ic:last-child { color: var(--muted); transition: transform .2s; }
+details[open] > summary > .ic:last-child { transform: rotate(180deg); }
+.planintro ul, .daysum ul { list-style: none; margin: 0; padding: 0 0 12px; display: grid; gap: 10px; }
+.planintro li, .daysum li { display: flex; gap: 10px; font-size: 13.5px; color: var(--ink-2); }
+.planintro li .ic, .daysum li .ic { width: 17px; height: 17px; flex: none; margin-top: 1px; color: var(--accent); }
+.planintro .hint { padding-bottom: 14px; }
+.daysum { background: #FBF7EE; border: 1px solid var(--line-2); padding: 0 14px; margin: 10px 0 4px; }
+.daysum summary b { font: 600 18px/1.2 var(--serif); }
+.daysum summary small { margin-top: 2px; }
+.menublock { padding: 4px 16px 16px; border-radius: var(--radius); background: var(--paper); border: 1px solid var(--line-2); display: grid; gap: 10px; }
+.menublock .sec-t .ic { color: var(--gold); }
+.menublock p { font-size: 14.5px; color: var(--ink-2); }
+.menublock .btn { justify-self: start; }
+.dishes { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.dishes li { font: 500 17px/1.35 var(--serif); padding: 7px 0; border-bottom: 1px dotted var(--line); }
+.dishes li:last-child { border: 0; }
+.muted.small, p.small { font-size: 12px; }
+.dishline { display: flex; gap: 5px; align-items: flex-start; color: var(--ink-2) !important; }
+.dishline .ic { width: 13px; height: 13px; margin-top: 2px; color: var(--gold); flex: none; }

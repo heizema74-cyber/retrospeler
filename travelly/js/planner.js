@@ -172,3 +172,57 @@ export function makePlan(trip, allSights, restaurants = [], weather = []) {
 export function sortItems(day) {
   day.items.sort((a, b) => a.time.localeCompare(b.time));
 }
+
+// ---------- uitleg: wat, hoe en waarom ----------
+// Wordt bij het tonen berekend uit de dag zelf, dus klopt ook nadat je zelf iets aanpast.
+export function explainDay(trip, day, index, total, weather, placeById) {
+  const fam = familyOf(trip);
+  const w = weather?.find((x) => x.date === day.date);
+  const wi = weatherInfo(w?.code);
+  const wet = w && isWet(w);
+  const dow = parseISO(day.date).getDay();
+  const items = day.items;
+  const sights = items.filter((i) => i.kind === 'sight' && placeById(i.refId)?.cat !== 'spelen').map((i) => placeById(i.refId) || i);
+  const trip1 = sights.find((s) => s.cat === 'dagtrip');
+  const indoor = sights.filter((s) => s.indoor);
+  const pts = items.filter((i) => i.lat);
+  let km = 0;
+  for (let k = 1; k < pts.length; k++) if (pts[k - 1].refId !== trip1?.id && pts[k].refId !== trip1?.id) km += distKm(pts[k - 1], pts[k]) * 1.3;
+  const spread = pts.length > 1 ? Math.max(...pts.flatMap((a) => pts.map((b) => distKm(a, b)))) : 0;
+
+  // korte titel
+  let title;
+  if (trip1) title = `Dagtrip naar ${trip1.name}`;
+  else if (wet && indoor.length >= sights.length / 2) title = 'Regendag: vooral binnen';
+  else if (sights.some((s) => s.cat === 'natuur' || s.cat === 'wandelen') && !wet) title = 'Buiten genieten en ontdekken';
+  else if (indoor.length) title = 'Musea en historie';
+  else title = 'Ontdekken in de binnenstad';
+  if (index === 0) title = 'Aankomen en ' + title[0].toLowerCase() + title.slice(1);
+  if (index === total - 1 && total > 1) title = 'Laatste dag: ' + title[0].toLowerCase() + title.slice(1);
+
+  const why = [];
+  if (w?.tmax != null) {
+    const src = w.source === 'klimaat' ? 'meestal' : 'verwacht';
+    if (wet) why.push({ icon: 'umbrella', text: `Regen ${src} (${w.pop}% kans). Daarom staat er vooral binnen op de planning${indoor.length ? ': ' + indoor.map((s) => s.name).join(', ') : ''}.` });
+    else why.push({ icon: wi.icon, text: `${wi.label}, ${src} rond de ${Math.round(w.tmax)}°. Goed weer voor ${sights.filter((s) => !s.indoor).length ? 'buitenplekken als ' + sights.filter((s) => !s.indoor).slice(0, 2).map((s) => s.name).join(' en ') : 'een mix van binnen en buiten'}.` });
+  }
+  if (trip1) why.push({ icon: 'suitcase', text: `${trip1.name} staat op de droogste dag in het midden van jullie reis, zodat je er de hele dag van kunt genieten.` });
+  if (dow === 1) why.push({ icon: 'info', text: 'Het is maandag: veel musea zijn dan dicht. Die staan daarom op een andere dag.' });
+  if ((dow === 3 || dow === 6) && trip.city.guide === 'leiden') why.push({ icon: 'calendar', text: `${dow === 3 ? 'Woensdag' : 'Zaterdag'} is het markt langs de Nieuwe Rijn: loop er even langs als je in de buurt bent.` });
+  if (pts.length > 1 && !trip1) why.push({ icon: 'walk', text: `Alles ligt dicht bij elkaar (binnen ${spread < 1 ? Math.round(spread * 1000 / 50) * 50 + ' m' : spread.toFixed(1).replace('.', ',') + ' km'}). In totaal ongeveer ${km.toFixed(1).replace('.', ',')} km lopen, in een logische volgorde.` });
+  const interests = trip.prefs?.interests || [];
+  const match = sights.filter((s) => (interests.includes('cultuur') && (s.cat === 'museum' || s.cat === 'historisch')) || (interests.includes('natuur') && s.cat === 'natuur') || (interests.includes('wandelen') && (s.cat === 'wandelen' || s.cat === 'natuur')));
+  if (match.length) why.push({ icon: 'heart', text: `Past bij waar jullie van houden: ${match.slice(0, 3).map((s) => s.name).join(', ')}.` });
+  if (fam) {
+    const parts = ['een rustiger tempo'];
+    if (items.some((i) => /middagdutje/i.test(i.title))) parts.push('een rustmoment na de lunch');
+    if (items.some((i) => /speelpauze/i.test(i.title))) parts.push('een speelpauze');
+    if (items.some((i) => /vroeg eten/i.test(i.title))) parts.push('vroeg eten op een kindvriendelijke plek');
+    why.push({ icon: 'baby', text: `Met kinderen van ${fam.label}: ${parts.join(', ')}.` });
+  }
+  const food = items.filter((i) => i.kind === 'food');
+  if (food.length) why.push({ icon: 'food', text: `Eten in de buurt van waar jullie dan zijn: ${food.map((f) => f.title.replace(/^(Lunch|Diner|Vroeg eten) bij /, '')).join(' en ')}.` });
+
+  const what = sights.length ? `${sights.length === 1 ? 'Eén hoogtepunt' : sights.length + ' hoogtepunten'}: ${sights.map((s) => s.name).join(', ')}.` : 'Een rustige dag zonder vaste bezienswaardigheden.';
+  return { title, what, why };
+}

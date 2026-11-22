@@ -62,6 +62,10 @@ export const gmaps = {
     const dest = p.lat ? `${p.lat},${p.lon}` : [p.name, city].join(', ');
     return `https://www.google.com/maps/dir/?api=1&destination=${enc(dest)}&travelmode=walking`;
   },
+  // Street View op die plek (opent in Google Maps), handig om de gevel te zien.
+  streetview(p) {
+    return `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${p.lat},${p.lon}`;
+  },
   // Een hele dagroute: begin, eindpunt en maximaal 8 tussenstops.
   day(points) {
     const pts = points.filter((p) => p.lat);
@@ -280,7 +284,7 @@ export function osmPlaces(lat, lon, kind) {
       const base = { id: `o${e.type[0]}${e.id}`, name: t.name, lat: la, lon: lo, address, website: t.website || t['contact:website'] || '', phone: t.phone || t['contact:phone'] || '' };
       if (kind === 'hotel') return { ...base, stars: Number(t.stars) || null, style: t.tourism === 'guest_house' ? 'B&B / pension' : 'Hotel', text: '' };
       const cafe = t.amenity === 'cafe';
-      return { ...base, cuisine: cafe ? 'Café / lunch' : cuisineLabel(t.cuisine), meal: cafe ? 'lunch' : 'beide', text: '' };
+      return { ...base, cuisine: cafe ? 'Café / lunch' : cuisineLabel(t.cuisine), meal: cafe ? 'lunch' : 'beide', text: '', menuUrl: t['website:menu'] || '' };
     }).filter((x) => x.lat && x.name);
     // de restaurants met de meeste info eerst (zegt vaak iets over hoe bekend ze zijn)
     return items;
