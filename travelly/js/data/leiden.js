@@ -179,6 +179,7 @@ export const LEIDEN = {
       photos: PHOTOS.muurgedichten, wiki: ['en', 'Wall poems in Leiden'],
       todo: ["Speur naar gedichten in tientallen talen", "Zoek het gedicht van Shakespeare", "Laat je meevoeren door de mooiste steegjes"],
       fam: {min: 5, buggy: "ja", text: "Maak er een speurtocht van: wie ziet het eerst het volgende gedicht op een muur?"},
+      website: 'https://tegen-beeld.nl/',
     },
     {
       id: 'hofjes', name: 'Hofjeswandeling', cat: 'wandelen', indoor: false, dur: 75, prio: 3,
@@ -228,6 +229,7 @@ export const LEIDEN = {
       photos: PHOTOS.hooglandse, wiki: ['nl', 'Hooglandse Kerk'],
       todo: ["Bekijk het lichte laatgotische interieur", "Zit even op het pleintje voor de kerk", "Loop door naar de Burcht vlakbij"],
       fam: {min: 6, buggy: "ja", text: "Kort binnenlopen; de Burcht om de hoek is leuker voor kinderen."},
+      website: 'http://www.hooglandsekerk.com',
     },
     {
       id: 'pilgrim', name: 'Leiden American Pilgrim Museum', cat: 'museum', indoor: true, dur: 45, prio: 2,
@@ -238,6 +240,7 @@ export const LEIDEN = {
       photos: PHOTOS.pilgrim, wiki: ['en', 'Pilgrim Museum Leiden'],
       todo: ["Stap binnen in een huis uit de 14e eeuw", "Hoor het verhaal van de Mayflower", "Bekijk voorwerpen uit het dagelijks leven van toen"],
       fam: {min: 8, buggy: "nee", text: "Klein museum met kostbare spullen: minder geschikt voor jonge kinderen."},
+      website: 'https://leidenamericanpilgrimmuseum.org/',
     },
     {
       id: 'morspoort', name: 'Morspoort', cat: 'historisch', indoor: false, dur: 20, prio: 2,
@@ -276,6 +279,7 @@ export const LEIDEN = {
       photos: PHOTOS.sterrewacht, wiki: ['nl', 'Sterrewacht Leiden'],
       todo: ["Kijk door een historische telescoop", "Hoor over 400 jaar sterrenkunde in Leiden", "Combineer met de Hortus ernaast"],
       fam: {min: 8, buggy: null, text: "Rondleidingen zijn vooral voor oudere kinderen en volwassenen."},
+      website: 'https://www.universiteitleiden.nl/en/science/astronomy',
     },
     {
       id: 'leidsehout', name: 'Leidse Hout', cat: 'natuur', indoor: false, dur: 75, prio: 2,

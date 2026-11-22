@@ -214,21 +214,42 @@ export function guessCategory(text) {
   return { cat: 'historisch', indoor: false, dur: 45 };
 }
 
+// Officiële website (P856) en bekendheid (aantal Wikipedia-talen) uit Wikidata.
+async function wikidataInfo(ids) {
+  const out = {};
+  for (let i = 0; i < ids.length; i += 50) {
+    const j = await getJSON(`https://www.wikidata.org/w/api.php?action=wbgetentities&format=json&origin=*&props=claims|sitelinks&ids=${ids.slice(i, i + 50).join('|')}`, { headers: WIKI_HEADERS });
+    for (const [q, e] of Object.entries(j.entities || {})) {
+      const site = (e.claims?.P856 || []).map((c) => c.mainsnak?.datavalue?.value).find(Boolean);
+      out[q] = { website: site || '', fame: Object.keys(e.sitelinks || {}).filter((k) => k.endsWith('wiki')).length };
+    }
+  }
+  return out;
+}
+
 export function wikiSights(lat, lon, lang = 'nl') {
-  return cached(`ws.${lang}.${lat.toFixed(3)},${lon.toFixed(3)}`, 7 * 864e5, async () => {
+  return cached(`ws2.${lang}.${lat.toFixed(3)},${lon.toFixed(3)}`, 7 * 864e5, async () => {
     const url = `https://${lang}.wikipedia.org/w/api.php?action=query&format=json&formatversion=2&origin=*` +
       `&generator=geosearch&ggscoord=${lat}|${lon}&ggsradius=10000&ggslimit=80` +
-      `&prop=pageimages|description|coordinates&piprop=thumbnail&pithumbsize=960&colimit=max`;
+      `&prop=pageimages|description|coordinates|pageprops&ppprop=wikibase_item&piprop=thumbnail&pithumbsize=960&colimit=max`;
     const j = await getJSON(url, { headers: WIKI_HEADERS });
     const pages = (j.query?.pages || []).filter((p) => p.thumbnail && p.coordinates && !SKIP.test(`${p.title} ${p.description || ''}`));
-    pages.sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
-    return pages.slice(0, 40).map((p, i) => {
+    const qids = pages.map((p) => p.pageprops?.wikibase_item).filter(Boolean);
+    const wd = qids.length ? await wikidataInfo(qids).catch(() => ({})) : {};
+    // Bekende plekken dicht bij het centrum eerst; kerkjes in omliggende dorpen zakken.
+    const center = { lat, lon };
+    const ranked = pages.map((p) => {
+      const info = wd[p.pageprops?.wikibase_item] || {};
+      const km = distKm(center, { lat: p.coordinates[0].lat, lon: p.coordinates[0].lon });
+      return { p, info, km, score: Math.log2((info.fame || 1) + 1) * 2 - km * 0.6 };
+    }).sort((a, b) => b.score - a.score);
+    return ranked.slice(0, 40).map(({ p, info }, i) => {
       const g = guessCategory(`${p.title} ${p.description || ''}`);
       return {
         id: `w${lang}${p.pageid}`, name: p.title.replace(/\s*\(.*\)$/, ''), ...g,
-        prio: Math.max(1, 5 - Math.floor(i / 6)), lat: p.coordinates[0].lat, lon: p.coordinates[0].lon,
+        prio: Math.max(1, 5 - Math.floor(i / 5)), lat: p.coordinates[0].lat, lon: p.coordinates[0].lon,
         short: p.description ? p.description[0].toUpperCase() + p.description.slice(1) : '',
-        photos: [p.thumbnail.source], wiki: [lang, p.title],
+        photos: [p.thumbnail.source], wiki: [lang, p.title], website: info.website || '', rank: i,
       };
     });
   });
@@ -276,8 +297,14 @@ export function osmPlaces(lat, lon, kind) {
     const q = kind === 'hotel'
       ? `[out:json][timeout:25];nwr["tourism"~"^(hotel|guest_house)$"]["name"](around:3500,${lat},${lon});out center tags 80;`
       : `[out:json][timeout:25];nwr["amenity"~"^(restaurant|cafe)$"]["name"](around:1500,${lat},${lon});out center tags 150;`;
-    const j = await overpass(q);
-    const items = (j.elements || []).map((e) => {
+    let elements;
+    try {
+      elements = (await overpass(q)).elements || [];
+    } catch {
+      // Overpass is soms overbelast: dan zoeken we via Nominatim (ook OpenStreetMap).
+      elements = await nominatimPlaces(lat, lon, kind);
+    }
+    const items = elements.map((e) => {
       const t = e.tags || {};
       const la = e.lat ?? e.center?.lat, lo = e.lon ?? e.center?.lon;
       const address = [t['addr:street'], t['addr:housenumber']].filter(Boolean).join(' ');
@@ -286,7 +313,28 @@ export function osmPlaces(lat, lon, kind) {
       const cafe = t.amenity === 'cafe';
       return { ...base, cuisine: cafe ? 'Café / lunch' : cuisineLabel(t.cuisine), meal: cafe ? 'lunch' : 'beide', text: '', menuUrl: t['website:menu'] || '' };
     }).filter((x) => x.lat && x.name);
-    // de restaurants met de meeste info eerst (zegt vaak iets over hoe bekend ze zijn)
+    if (!items.length) throw new Error('geen resultaten');
     return items;
   });
+}
+
+// Reserve: Nominatim kent ook restaurants en hotels; we zetten de antwoorden om naar
+// hetzelfde formaat als Overpass, zodat de rest van de app niets merkt.
+async function nominatimPlaces(lat, lon, kind) {
+  const d = kind === 'hotel' ? 0.035 : 0.02;
+  const box = [lon - d, lat + d, lon + d, lat - d].map((x) => x.toFixed(4)).join(',');
+  const terms = kind === 'hotel' ? ['hotel', 'guest house'] : ['restaurant', 'cafe'];
+  const out = [];
+  for (const term of terms) {
+    const j = await getJSON(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=50&addressdetails=1&extratags=1&bounded=1&viewbox=${box}&q=${enc(term)}`);
+    for (const r of j) {
+      if (!r.name) continue;
+      const t = { ...(r.extratags || {}), name: r.name, 'addr:street': r.address?.road, 'addr:housenumber': r.address?.house_number };
+      if (kind === 'hotel') t.tourism = r.type === 'guest_house' ? 'guest_house' : 'hotel';
+      else t.amenity = r.type === 'cafe' ? 'cafe' : 'restaurant';
+      out.push({ type: r.osm_type || 'node', id: r.osm_id, lat: Number(r.lat), lon: Number(r.lon), tags: t });
+    }
+  }
+  const seen = new Set();
+  return out.filter((e) => { const k = e.type + e.id; if (seen.has(k)) return false; seen.add(k); return true; });
 }

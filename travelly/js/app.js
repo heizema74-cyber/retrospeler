@@ -603,7 +603,7 @@ async function listPage(id, kind) {
     let l = all.slice();
     if (kind === 'sight') {
       const fs = (s) => { const f = kidFit(s, fam); return f ? (f.level === 'top' ? 3 : f.level === 'deels' ? 1 : -4) : 0; };
-      if (filter === 'top') l = l.filter((s) => s.cat !== 'dagtrip' && s.cat !== 'spelen').sort((a, b) => (b.prio + fs(b)) - (a.prio + fs(a)) || a.km - b.km);
+      if (filter === 'top') l = l.filter((s) => s.cat !== 'dagtrip' && s.cat !== 'spelen').sort((a, b) => (b.prio + fs(b)) - (a.prio + fs(a)) || (a.rank ?? 0) - (b.rank ?? 0) || a.km - b.km);
       else if (filter === 'kids') l = l.filter((s) => s.cat !== 'dagtrip' && kidFit(s, fam)?.level !== 'nee').sort((a, b) => fs(b) - fs(a) || b.prio - a.prio);
       else if (filter === 'binnen') l = l.filter((s) => s.indoor && s.cat !== 'spelen');
       else l = l.filter((s) => s.cat === filter);
@@ -664,6 +664,7 @@ async function detail(id, pid) {
         <a class="btn" target="_blank" rel="noopener" href="${gmaps.place(p, trip.city.name)}">${icon('external')} Open in Google Maps</a>
         <a class="btn ghost" target="_blank" rel="noopener" href="${gmaps.route(p, trip.city.name)}">${icon('nav')} Route</a>
         ${p.website ? `<a class="btn ghost" target="_blank" rel="noopener" href="${esc(p.website)}">${icon('globe')} Website</a>` : ''}
+      ${p.wiki ? `<a class="btn ghost" target="_blank" rel="noopener" href="https://${p.wiki[0]}.wikipedia.org/wiki/${enc(p.wiki[1].replace(/ /g, '_'))}">${icon('book')} Meer lezen</a>` : ''}
       ${p.kind !== 'sight' ? `<a class="btn ghost" target="_blank" rel="noopener" href="${gmaps.streetview(p)}">${icon('camera')} Gevel in Street View</a>` : ''}
       </div>
       <p class="text" id="dtext">${esc(p.text || p.short || '')}</p>
